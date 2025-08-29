@@ -8,8 +8,11 @@ import { CardsModule } from './cards/cards.module';
 import { BattleModule } from './battle/battle.module';
 import { AuthModule } from './auth/auth.module';
 
+import { DatabaseModule } from './database/database.module';
+
 @Module({
   imports: [
+    DatabaseModule,
     UsersModule,
     CategoriesModule,
     CollectionsModule,

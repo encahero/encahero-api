@@ -9,10 +9,12 @@ import { BattleModule } from './battle/battle.module';
 import { AuthModule } from './auth/auth.module';
 
 import { DatabaseModule } from './database/database.module';
+import { CacheRedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
     DatabaseModule,
+    CacheRedisModule,
     UsersModule,
     CategoriesModule,
     CollectionsModule,

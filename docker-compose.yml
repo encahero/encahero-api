@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  encahero:
+    build: ./.devcontainer
+    volumes:
+      - .:/workspace:cached
+    ports:
+      - "3000:3000"   # chỉ cần bind dev server
+    command: tail -f /dev/null
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: encohero
+      POSTGRES_PASSWORD: encohero
+      POSTGRES_DB: encohero
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"

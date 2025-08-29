@@ -1,0 +1,13 @@
+{
+  "name": "Encahero API Devcontainer",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "encahero",
+  "workspaceFolder": "/workspace",
+  "extensions": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ],
+  "forwardPorts": [3000, 5432, 6379],
+  // "postCreateCommand": "pnpm install"
+}
+

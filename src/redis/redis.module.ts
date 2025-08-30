@@ -1,9 +1,10 @@
-import { Global, Module } from '@nestjs/common';
 import Keyv from 'keyv';
+import { Global, Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import KeyvRedis, { createClient } from '@keyv/redis';
 import { CacheService } from './redis.service';
 import { CustomConfigModule } from 'src/config/custom-config.module';
-import { ConfigService } from '@nestjs/config';
+import { MEMORY_CACHE_TTL } from 'src/constants';
 
 @Global()
 @Module({
@@ -31,7 +32,7 @@ import { ConfigService } from '@nestjs/config';
     {
       provide: 'MEMORY_CACHE',
       useFactory: async () => {
-        const memoryCache = new Keyv({ ttl: 60000 });
+        const memoryCache = new Keyv({ ttl: MEMORY_CACHE_TTL });
         await memoryCache.set('ping', 'pong');
         const a = await memoryCache.get<string>('ping');
         console.log('Ping value:', a);

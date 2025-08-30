@@ -14,7 +14,7 @@ export class UsersService {
   async findAll() {
     console.log('User');
     await this.cacheService.setRedis('test_key', { a: 1, b: 2 }, 600000);
-    return `This action returns all users`;
+    return `This action returns all users 1`;
   }
 
   async findOne(id: number) {

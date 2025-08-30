@@ -2,14 +2,19 @@ import { Global, Module } from '@nestjs/common';
 import Keyv from 'keyv';
 import KeyvRedis, { createClient } from '@keyv/redis';
 import { CacheService } from './redis.service';
+import { CustomConfigModule } from 'src/config/custom-config.module';
+import { ConfigService } from '@nestjs/config';
 
 @Global()
 @Module({
+  imports: [CustomConfigModule],
   providers: [
     {
       provide: 'REDIS_CACHE',
-      useFactory: async () => {
-        const redis = createClient({ url: 'redis://redis:6379' });
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL');
+        const redis = createClient({ url: redisUrl });
         const keyvRedis = new KeyvRedis(redis);
         const redisCache = new Keyv({ store: keyvRedis });
         try {

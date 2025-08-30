@@ -10,9 +10,11 @@ import { AuthModule } from './auth/auth.module';
 
 import { DatabaseModule } from './database/database.module';
 import { CacheRedisModule } from './redis/redis.module';
+import { CustomConfigModule } from './config/custom-config.module';
 
 @Module({
   imports: [
+    CustomConfigModule.register(),
     DatabaseModule,
     CacheRedisModule,
     UsersModule,

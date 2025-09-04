@@ -1,28 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { CacheService } from 'src/redis/redis.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './entities/user.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly cacheService: CacheService) {}
+  constructor(@InjectRepository(User) private readonly userRepo: Repository<User>) {}
 
   create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+    return this.userRepo.save(createUserDto);
+  }
+
+  async findByEmail(email: string) {
+    return this.userRepo.findOne({ where: { email } });
   }
 
   async findAll() {
     console.log('User');
-    await this.cacheService.setRedis('test_key', { a: 1, b: 2 }, 600000);
+    // await this.cacheService.setRedis('test_key', { a: 1, b: 2 }, 600000);
     return `This action returns all users 1`;
   }
 
   async findOne(id: number) {
-    const key = await this.cacheService.getRedis<{ a: number; b: number }>(
-      'test_key',
-    );
-    console.log('Key:', key);
-    return `This action returns a #${id} user ${JSON.stringify(key)}`;
+    // const key = await this.cacheService.getRedis<{ a: number; b: number }>(
+    //   'test_key',
+    // );
+    return `This action returns a #${id} user`;
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {

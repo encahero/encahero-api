@@ -4,6 +4,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 type DbType = 'postgres' | 'mysql' | 'mariadb' | 'sqlite' | 'mssql';
 
 export default registerAs('database', (): TypeOrmModuleOptions => {
+  console.log(__dirname)
   return {
     type: (process.env.DB_TYPE ?? 'postgres') as DbType,
     host: process.env.DB_HOST,
@@ -14,5 +15,8 @@ export default registerAs('database', (): TypeOrmModuleOptions => {
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
     synchronize: true,
     logging: true,
+
+
+
   };
 });

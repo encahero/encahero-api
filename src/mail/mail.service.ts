@@ -8,7 +8,7 @@ export class MailService {
     async sendMagicLink(to: string, link: string) {
         const html = `
         <p>Click the link below to login:</p>
-        <a href="https://retrochat.xyz/search?filter=user" style="color: blue;">Click here</a>
+        <a href="${link}" style="color: blue;">Click here</a>
         <p>This link will expire in 15 minutes.</p>
         `;
 

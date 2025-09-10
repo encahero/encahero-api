@@ -15,16 +15,13 @@ async function bootstrap() {
   app.use(helmet());
   app.enableCors(
     {
-       origin: [
-      'exp://192.168.1.100:8081',
-      'http://192.168.1.100:19006', 
-    ],
-      credentials: true,
+       origin: '*',
+      // credentials: true,
     }
   );
   app.setGlobalPrefix('api/v1');
-  app.useGlobalPipes(GlobalValidationPipe);  
-  await app.listen(process.env.PORT ?? 3000);
+  app.useGlobalPipes(GlobalValidationPipe);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 
 bootstrap();

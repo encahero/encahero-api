@@ -1,4 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    HttpStatus,
+    Injectable,
+    InternalServerErrorException,
+    NotFoundException,
+    UnauthorizedException,
+} from '@nestjs/common';
 import { MagicLinkAuthDto } from './dto/magic-link-auth.dto';
 
 import { TokenService } from './token.service';
@@ -8,35 +16,40 @@ import { MailService } from 'src/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { CacheService } from 'src/redis/redis.service';
+import { errorResponse, successResponse } from 'src/common/response';
+import { plainToInstance } from 'class-transformer';
+import { UserResponseDto } from 'src/users/dto/user-response.dto';
+import { NotFoundError } from 'rxjs';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'src/constants';
 
 type GGPayLoad = {
-  email: string,
-  given_name: string,
-  family_name: string,
-  picture: string,
-  sub: string,
-}
+    email: string;
+    given_name: string;
+    family_name: string;
+    picture: string;
+    sub: string;
+};
 
 @Injectable()
 export class AuthService {
-  private readonly appName: string = `${process.env.APP_NAME}`;
-  private authClient: OAuth2Client;
-  constructor(
-    private readonly tokenService: TokenService,
-    private readonly userService: UsersService,
-    private readonly mailService: MailService,
-    private readonly configService: ConfigService,
-    private readonly cacheService: CacheService,
-  ) { 
-    this.authClient = new OAuth2Client({
-      clientId: this.configService.get<string>('GG_CLIENT_ID'),
-      clientSecret: this.configService.get<string>('GG_CLIENT_SECRET'),
-    });
-  }
+    private readonly appName: string = `${process.env.APP_NAME}`;
+    private authClient: OAuth2Client;
+    constructor(
+        private readonly tokenService: TokenService,
+        private readonly userService: UsersService,
+        private readonly mailService: MailService,
+        private readonly configService: ConfigService,
+        private readonly cacheService: CacheService,
+    ) {
+        this.authClient = new OAuth2Client({
+            clientId: this.configService.get<string>('GG_CLIENT_ID'),
+            clientSecret: this.configService.get<string>('GG_CLIENT_SECRET'),
+        });
+    }
 
-  async magicLogin(token: string) {
-  // Redirect về app với JWT
-  return `<html>
+    async magicLogin(token: string) {
+        // Redirect về app với JWT
+        return `<html>
     <body>
       <script>
         // Redirect tới app bằng custom scheme
@@ -45,195 +58,148 @@ export class AuthService {
       <p>If nothing happens, click <a href="encahero://auth/login?jwt=${token}"> encahero://auth/login?jwt=${token} here</a></p>
     </body>
   </html>`;
-  }
-
-  async sendLoginMagicLink(dto: MagicLinkAuthDto) {
-    console.log("debug here dto", dto);
-    const {email} =  dto ;
-    // if user exists
-
-    // let user  = await this.userService.findByEmail(email);
-    // if (!user) {
-    //   // response error
-    //   return {
-    //     status: 'Not Found',
-    //     statusCode: 404,
-    //     message: 'User not found',
-    //   };
-    // }
-
-  
-
-    // // generate a token
-    // const token = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
-
-    // // generate deep link
-    // const magicLink = `http://encahero.com:3000/api/v1/auth?token=${token}`;
-
-    // console.log("debug here")
-    // // send mail
-    // await this.mailService.sendMagicLink(email, magicLink);
-    // return {
-    //   data: 'Check your email for the magic link',
-    // }
-  }
-
-  async registerWithMagicLink(dto: MagicLinkAuthDto) {
-
-        const {email} =  dto ;
-    // if user exists
-
-    let user  = await this.userService.findByEmail(email);
-    if (user) {
-      // response error
-      return {
-        status: 'Conflict',
-        statusCode: 409,
-        message: 'User already exists ',
-      };
     }
 
-    
+    sendLoginMagicLink(dto: MagicLinkAuthDto) {
+        console.log('Hello');
+        throw new BadRequestException();
+        // if user exists
 
-    // generate a token
-    const token = this.tokenService.generateAccessToken(email);
+        // let user  = await this.userService.findByEmail(email);
+        // if (!user) {
+        //   // response error
+        //   return {
+        //     status: 'Not Found',
+        //     statusCode: 404,
+        //     message: 'User not found',
+        //   };
+        // }
 
-    // generate deep link
-    const magicLink = `${this.appName}/auth/magic-link?token=${token}`;
+        // // generate a token
+        // const token = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
 
-    // send mail
-    await this.mailService.sendMagicLink(email, magicLink);
-    return 'This action adds a new auth';
+        // // generate deep link
+        // const magicLink = `http://encahero.com:3000/api/v1/auth?token=${token}`;
 
-
-  }
-
-
-  async ggLogin(token: string) { 
-
-    try {
-
-      const ticket = await this.authClient.verifyIdToken({
-      idToken: token,
-      audience: this.configService.get<string>('GG_CLIENT_ID'),
-    });
-
-    const payload = ticket.getPayload() as GGPayLoad;
-
-    console.log(payload)
-    if (!payload) {
-      return {
-        status: 'Unauthorized',
-        statusCode: 401,
-        message: 'Invalid token',
-      };
+        // console.log("debug here")
+        // // send mail
+        // await this.mailService.sendMagicLink(email, magicLink);
+        // return {
+        //   data: 'Check your email for the magic link',
+        // }
     }
 
-    let user = await this.userService.findByEmail(payload.email);
-    if (!user) {
-      return {
-        status: 'Not Found',
-        statusCode: 404,
-        message: 'User not registered',
-      };
+    async registerWithMagicLink(dto: MagicLinkAuthDto) {
+        const { email } = dto;
+        // if user exists
+
+        const user = await this.userService.findByEmail(email);
+        if (user) {
+            // response error
+            return {
+                status: 'Conflict',
+                statusCode: 409,
+                message: 'User already exists ',
+            };
+        }
+
+        // generate a token
+        const token = await this.tokenService.generateAccessToken(email);
+
+        // generate deep link
+        const magicLink = `${this.appName}/auth/magic-link?token=${token}`;
+
+        // send mail
+        await this.mailService.sendMagicLink(email, magicLink);
+        return 'This action adds a new auth';
     }
 
-    const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
-      const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id));
-      
-      console.log({ jwt, refresh })
-      
-      console.log( "Expire : ", this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'))
+    async ggLogin(token: string) {
+        // parse token
+        const ticket = await this.authClient.verifyIdToken({
+            idToken: token,
+        });
 
-    // save token to redis
-    await this.cacheService.setRedis(`${user.id}:access-token`, jwt, Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'))); 
-    await this.cacheService.setRedis(`${user.id}:refresh-token`, refresh, Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE'))); 
+        const payload = ticket.getPayload() as GGPayLoad;
 
-      return {
-        status: 'Success',
-        statusCode: 200,
-        data: {
-          accessToken: jwt,
-          refreshToken: refresh,
-          user,
-      }
-    };
+        if (!payload) {
+            throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
+        }
 
-    }catch (error) {
-      console.log(error)
-      return {
-        status: 'Error',
-        statusCode: 500,
-        message: 'Internal server error',
-      };
-    }
-    
+        const user = await this.userService.findByEmail(payload.email);
+        if (!user) {
+            throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
+        }
 
-  }
+        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
+        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id));
 
-  async ggRegister(token: string) { 
-    try {
+        // save token to redis
+        await this.cacheService.setRedis(
+            `${user.id}:access-token`,
+            jwt,
+            Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')),
+        );
+        await this.cacheService.setRedis(
+            `${user.id}:refresh-token`,
+            refresh,
+            Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')),
+        );
 
-      const ticket = await this.authClient.verifyIdToken({
-        idToken: token,
-        audience: this.configService.get<string>('GG_CLIENT_ID'),
-      });
-  
-      const payload = ticket.getPayload() as GGPayLoad;
-  
-      if (!payload) {
-        return {
-          status: 'Unauthorized',
-          statusCode: 401,
-          message: 'Invalid token',
-        };
-      }
-  
-      let user = await this.userService.findByEmail(payload.email);
-      if (user) {
-        return {
-          status: 'User Exists',
-          statusCode: 404,
-          message: 'User already registered',
-        };
-      }
-  
-      // create user
-      user = await this.userService.create({
-        email: payload.email,
-        firstName: payload.given_name,
-        lastName: payload.family_name,
-        avatar: payload.picture,
-      });  
-  
-      const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
-      const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id));
+        const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
 
-  
-      // save token to redis
-    await this.cacheService.setRedis(`${user.id}:access-token`, jwt, this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')); // 15 minutes
-    await this.cacheService.setRedis(`${user.id}:refresh-token`, refresh, this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')); // 7 days
-      
-      return {
-        status: 'Success',
-        statusCode: 200,
-        data: {
-          accessToken: jwt,
-          refreshToken: refresh,
-          user,
-      }
-    };
-
-    }catch (error) {
-      console.log(error)
-      return {
-        status: 'Error',
-        statusCode: 500,
-        message: 'Internal server error',
-      };
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
+            accessToken: jwt,
+            refreshToken: refresh,
+            user: safeUser,
+        });
     }
 
-  }
+    async ggRegister(token: string) {
+        const ticket = await this.authClient.verifyIdToken({
+            idToken: token,
+        });
 
+        const payload = ticket.getPayload() as GGPayLoad;
 
+        if (!payload) {
+            throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
+        }
+
+        let user = await this.userService.findByEmail(payload.email);
+        if (user) {
+            throw new ConflictException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
+        }
+
+        // create user
+        user = await this.userService.create({
+            email: payload.email,
+            firstName: payload.given_name,
+            lastName: payload.family_name,
+            avatar: payload.picture,
+        });
+
+        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
+        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id));
+
+        // save token to redis
+        await this.cacheService.setRedis(
+            `${user.id}:access-token`,
+            jwt,
+            this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'),
+        ); // 15 minutes
+        await this.cacheService.setRedis(
+            `${user.id}:refresh-token`,
+            refresh,
+            this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE'),
+        ); // 7 days
+
+        const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.REGISTER, {
+            accessToken: jwt,
+            refreshToken: refresh,
+            user: safeUser,
+        });
+    }
 }

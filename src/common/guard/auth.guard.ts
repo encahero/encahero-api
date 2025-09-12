@@ -14,11 +14,11 @@ export class AuthGuard implements CanActivate {
         if (!authHeader) throw new UnauthorizedException(ERROR_MESSAGES.AUTH.MISSING_TOKEN);
 
         const token = authHeader.split(' ')[1];
-        const userId = await this.tokenService.validateAccessToken(token);
+        const result = await this.tokenService.validateAccessToken(token);
 
-        if (!userId) throw new UnauthorizedException(ERROR_MESSAGES.AUTH.ACCESSS_INVALID_TOKEN);
-
-        request.user = { userId };
+        if (!result) throw new UnauthorizedException(ERROR_MESSAGES.AUTH.ACCESSS_INVALID_TOKEN);
+        const { userId, deviceId } = result;
+        request.user = { userId, deviceId };
 
         return true;
     }

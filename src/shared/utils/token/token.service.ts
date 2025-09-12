@@ -1,11 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { ACCESS_TOKEN, ERROR_MESSAGES, REFRESH_TOKEN } from 'src/constants';
+import { ERROR_MESSAGES } from 'src/constants';
 import { CacheService } from 'src/redis/redis.service';
+import { getAccessTokenKey, getRefreshTokenKey } from '../func/redis-key';
 
 type JwtPayload = {
     userId: string;
+    deviceId: string;
 };
 
 type JwtMagicPayload = {
@@ -20,9 +22,9 @@ export class TokenService {
         private readonly cacheService: CacheService,
     ) {}
 
-    async generateAccessToken(userId: string): Promise<string> {
+    async generateAccessToken(userId: string, deviceId: string): Promise<string> {
         return await this.jwtService.signAsync(
-            { userId },
+            { userId, deviceId },
             {
                 expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRE'),
                 secret: this.configService.get('SECRET_KEY'),
@@ -30,9 +32,9 @@ export class TokenService {
         );
     }
 
-    async generateRefreshToken(userId: string): Promise<string> {
+    async generateRefreshToken(userId: string, deviceId: string): Promise<string> {
         return await this.jwtService.signAsync(
-            { userId },
+            { userId, deviceId },
             {
                 expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRE'),
                 secret: this.configService.get('REFRESH_KEY'),
@@ -47,19 +49,20 @@ export class TokenService {
         );
     }
 
-    async validateAccessToken(token: string): Promise<string | null> {
+    async validateAccessToken(token: string): Promise<{ userId: string; deviceId: string } | null> {
         try {
             const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
                 secret: this.configService.get('SECRET_KEY'),
             });
 
             const userId = payload.userId;
+            const deviceId = payload.deviceId;
 
-            const redisToken = await this.cacheService.getRedis<string>(`${userId}:${ACCESS_TOKEN}`);
+            const redisToken = await this.cacheService.getRedis<string>(getAccessTokenKey(userId, deviceId));
             if (redisToken !== token) {
                 return null;
             }
-            return userId;
+            return { userId, deviceId };
         } catch (error) {
             if (error instanceof TokenExpiredError) {
                 throw new UnauthorizedException(ERROR_MESSAGES.AUTH.ACCESS_TOKEN_EXPIRED);
@@ -69,20 +72,21 @@ export class TokenService {
         }
     }
 
-    async validateRefreshToken(token: string): Promise<string | null> {
+    async validateRefreshToken(token: string): Promise<{ userId: string; deviceId: string } | null> {
         try {
             const payload = await this.jwtService.verifyAsync<JwtPayload>(token, {
                 secret: this.configService.get('REFRESH_KEY'),
             });
 
             const userId = payload.userId;
+            const deviceId = payload.deviceId;
 
-            const redisToken = await this.cacheService.getRedis<string>(`${userId}:${REFRESH_TOKEN}`);
+            const redisToken = await this.cacheService.getRedis<string>(getRefreshTokenKey(userId, deviceId));
             if (redisToken !== token) {
                 return null;
             }
 
-            return userId;
+            return { userId, deviceId };
         } catch (error) {
             if (error instanceof TokenExpiredError) {
                 throw new UnauthorizedException(ERROR_MESSAGES.AUTH.REFRESH_TOKEN_EXPIRED);

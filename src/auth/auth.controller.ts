@@ -1,8 +1,6 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MagicLinkAuthDto } from './dto/magic-link-auth.dto';
-import { AuthGuard } from 'src/common/guard/auth.guard';
-import type AuthenticatedRequest from 'src/shared/interfaces/auth-request';
 
 @Controller('auth')
 export class AuthController {
@@ -24,13 +22,13 @@ export class AuthController {
     }
 
     @Post('google-login')
-    ggLogin(@Body('token') token: string) {
-        return this.authService.ggLogin(token);
+    ggLogin(@Body('token') token: string, @Body('deviceId') deviceId: string) {
+        return this.authService.ggLogin(token, deviceId);
     }
 
     @Post('google-register')
-    ggRegister(@Body('token') token: string) {
-        return this.authService.ggRegister(token);
+    ggRegister(@Body('token') token: string, @Body('deviceId') deviceId: string) {
+        return this.authService.ggRegister(token, deviceId);
     }
 
     @Post('refresh-token')

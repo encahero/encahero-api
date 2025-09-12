@@ -21,6 +21,7 @@ import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
 
 import { ERROR_MESSAGES, SUCCESS_MESSAGES, ACCESS_TOKEN, REFRESH_TOKEN } from 'src/constants';
+import { getAccessTokenKey, getRefreshTokenKey } from 'src/shared/utils/func/redis-key';
 
 type GGPayLoad = {
     email: string;
@@ -104,17 +105,17 @@ export class AuthService {
         }
 
         // generate a token
-        const token = await this.tokenService.generateAccessToken(email);
+        // const token = await this.tokenService.generateAccessToken(email);
 
         // generate deep link
-        const magicLink = `${this.appName}/auth/magic-link?token=${token}`;
+        // const magicLink = `${this.appName}/auth/magic-link?token=${token}`;
 
         // send mail
-        await this.mailService.sendMagicLink(email, magicLink);
+        // await this.mailService.sendMagicLink(email, magicLink);
         return 'This action adds a new auth';
     }
 
-    async ggLogin(token: string) {
+    async ggLogin(token: string, deviceId: string) {
         // parse token
         const ticket = await this.authClient.verifyIdToken({
             idToken: token,
@@ -131,17 +132,17 @@ export class AuthService {
             throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
         }
 
-        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
-        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id));
+        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id), deviceId);
+        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id), deviceId);
 
         // save token to redis
         await this.cacheService.setRedis(
-            `${user.id}:${ACCESS_TOKEN}`,
+            getAccessTokenKey(JSON.stringify(user.id), deviceId),
             jwt,
             Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')),
         );
         await this.cacheService.setRedis(
-            `${user.id}:${REFRESH_TOKEN}`,
+            getRefreshTokenKey(JSON.stringify(user.id), deviceId),
             refresh,
             Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')),
         );
@@ -157,7 +158,7 @@ export class AuthService {
         });
     }
 
-    async ggRegister(token: string) {
+    async ggRegister(token: string, deviceId: string) {
         const ticket = await this.authClient.verifyIdToken({
             idToken: token,
         });
@@ -181,20 +182,20 @@ export class AuthService {
             avatar: payload.picture,
         });
 
-        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
-        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id));
+        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id), deviceId);
+        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id), deviceId);
 
         // save token to redis
         await this.cacheService.setRedis(
-            `${user.id}:${ACCESS_TOKEN}`,
+            `${user.id}-${deviceId}:${ACCESS_TOKEN}`,
             jwt,
-            this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'),
-        ); // 15 minutes
+            Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')),
+        );
         await this.cacheService.setRedis(
-            `${user.id}:${REFRESH_TOKEN}`,
+            `${user.id}-${deviceId}:${REFRESH_TOKEN}`,
             refresh,
-            this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE'),
-        ); // 7 days
+            Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')),
+        );
 
         const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
 
@@ -208,22 +209,24 @@ export class AuthService {
     async refreshToken(token: string) {
         try {
             // verify token
-            const userId = await this.tokenService.validateRefreshToken(token);
-            if (!userId) {
+            const result = await this.tokenService.validateRefreshToken(token);
+            if (!result) {
                 throw new UnauthorizedException(ERROR_MESSAGES.AUTH.REFRESH_INVALID_TOKEN);
             }
 
+            const { userId, deviceId } = result;
+
             // check in redis
-            const redisToken = await this.cacheService.getRedis<string>(`${userId}:${REFRESH_TOKEN}`);
+            const redisToken = await this.cacheService.getRedis<string>(getRefreshTokenKey(userId, deviceId));
             if (redisToken !== token) {
                 throw new UnauthorizedException(ERROR_MESSAGES.AUTH.REFRESH_INVALID_TOKEN);
             }
 
             // generate new access token
-            const newAccessToken = await this.tokenService.generateAccessToken(userId);
+            const newAccessToken = await this.tokenService.generateAccessToken(userId, deviceId);
             // update redis
             await this.cacheService.setRedis(
-                `${userId}:${ACCESS_TOKEN}`,
+                getAccessTokenKey(userId, deviceId),
                 newAccessToken,
                 this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'),
             ); // 15 minutes
@@ -242,12 +245,16 @@ export class AuthService {
         }
 
         // remove all token from redis
-        const userId = await this.tokenService.validateAccessToken(token);
-        console.log({ userId });
-        if (userId) {
+        const result = await this.tokenService.validateAccessToken(token);
+        if (!result) {
+            return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGOUT, true);
+        }
+
+        const { userId, deviceId } = result;
+        if (userId && deviceId) {
             await Promise.all([
-                this.cacheService.delRedis(`${userId}:${ACCESS_TOKEN}`),
-                this.cacheService.delRedis(`${userId}:${REFRESH_TOKEN}`),
+                this.cacheService.delRedis(getAccessTokenKey(userId, deviceId)),
+                this.cacheService.delRedis(getRefreshTokenKey(userId, deviceId)),
             ]);
         }
 

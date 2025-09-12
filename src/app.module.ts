@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -11,20 +11,25 @@ import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
 import { CacheRedisModule } from './redis/redis.module';
 import { CustomConfigModule } from './config/custom-config.module';
+import { LoggerMiddleware } from './common/middleware/logger.middle';
 
 @Module({
-  imports: [
-    CustomConfigModule.register(),
-    DatabaseModule,
-    CacheRedisModule,
-    UsersModule,
-    CategoriesModule,
-    CollectionsModule,
-    CardsModule,
-    BattleModule,
-    AuthModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+    imports: [
+        CustomConfigModule.register(),
+        DatabaseModule,
+        CacheRedisModule,
+        UsersModule,
+        CategoriesModule,
+        CollectionsModule,
+        CardsModule,
+        BattleModule,
+        AuthModule,
+    ],
+    controllers: [AppController],
+    providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(LoggerMiddleware).forRoutes('*'); // Áp dụng cho tất cả route
+    }
+}

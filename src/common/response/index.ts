@@ -7,7 +7,7 @@ export interface ApiResponse<T = any> {
     data?: T;
 }
 
-export function successResponse<T>(statusCode = HttpStatus.OK, message = 'Success', data: T): ApiResponse<T> {
+export function successResponse<T>(statusCode = HttpStatus.OK, message = 'Success', data?: T): ApiResponse<T> {
     const status = HttpStatus[statusCode] || 'OK';
     return {
         status,

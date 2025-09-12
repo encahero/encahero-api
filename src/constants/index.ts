@@ -1,6 +1,11 @@
 export const ERROR_MESSAGES = {
     AUTH: {
         INVALID_TOKEN: 'Invalid Token',
+        ACCESSS_INVALID_TOKEN: 'Invalid Access Token',
+        REFRESH_INVALID_TOKEN: 'Invalid Refresh Token',
+        MISSING_TOKEN: 'Token Missing',
+        ACCESS_TOKEN_EXPIRED: 'Access token expired',
+        REFRESH_TOKEN_EXPIRED: 'Refresh token expired',
     },
 
     USER: {
@@ -22,6 +27,7 @@ export const SUCCESS_MESSAGES = {
         LOGIN: 'Login Successfully',
         REGISTER: 'Register Successfully',
         LOGOUT: 'Logout Successfully',
+        REFRESH_TOKEN: 'Refresh token successfully',
     },
     USER: {
         PROFILE_UPDATED: 'Profile updated successfully',
@@ -29,3 +35,5 @@ export const SUCCESS_MESSAGES = {
 };
 
 export const MEMORY_CACHE_TTL = 60000;
+export const ACCESS_TOKEN = 'access-token';
+export const REFRESH_TOKEN = 'refresh-token';

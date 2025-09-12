@@ -9,18 +9,18 @@ import {
 } from '@nestjs/common';
 import { MagicLinkAuthDto } from './dto/magic-link-auth.dto';
 
-import { TokenService } from './token.service';
+import { TokenService } from '../shared/utils/token/token.service';
 import { UsersService } from 'src/users/users.service';
 
 import { MailService } from 'src/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { CacheService } from 'src/redis/redis.service';
-import { errorResponse, successResponse } from 'src/common/response';
+import { successResponse } from 'src/common/response';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
-import { NotFoundError } from 'rxjs';
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'src/constants';
+
+import { ERROR_MESSAGES, SUCCESS_MESSAGES, ACCESS_TOKEN, REFRESH_TOKEN } from 'src/constants';
 
 type GGPayLoad = {
     email: string;
@@ -136,17 +136,19 @@ export class AuthService {
 
         // save token to redis
         await this.cacheService.setRedis(
-            `${user.id}:access-token`,
+            `${user.id}:${ACCESS_TOKEN}`,
             jwt,
             Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')),
         );
         await this.cacheService.setRedis(
-            `${user.id}:refresh-token`,
+            `${user.id}:${REFRESH_TOKEN}`,
             refresh,
             Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')),
         );
 
         const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+
+        console.log({ safeUser });
 
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
             accessToken: jwt,
@@ -184,12 +186,12 @@ export class AuthService {
 
         // save token to redis
         await this.cacheService.setRedis(
-            `${user.id}:access-token`,
+            `${user.id}:${ACCESS_TOKEN}`,
             jwt,
             this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'),
         ); // 15 minutes
         await this.cacheService.setRedis(
-            `${user.id}:refresh-token`,
+            `${user.id}:${REFRESH_TOKEN}`,
             refresh,
             this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE'),
         ); // 7 days
@@ -201,5 +203,54 @@ export class AuthService {
             refreshToken: refresh,
             user: safeUser,
         });
+    }
+
+    async refreshToken(token: string) {
+        try {
+            // verify token
+            const userId = await this.tokenService.validateRefreshToken(token);
+            if (!userId) {
+                throw new UnauthorizedException(ERROR_MESSAGES.AUTH.REFRESH_INVALID_TOKEN);
+            }
+
+            // check in redis
+            const redisToken = await this.cacheService.getRedis<string>(`${userId}:${REFRESH_TOKEN}`);
+            if (redisToken !== token) {
+                throw new UnauthorizedException(ERROR_MESSAGES.AUTH.REFRESH_INVALID_TOKEN);
+            }
+
+            // generate new access token
+            const newAccessToken = await this.tokenService.generateAccessToken(userId);
+            // update redis
+            await this.cacheService.setRedis(
+                `${userId}:${ACCESS_TOKEN}`,
+                newAccessToken,
+                this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'),
+            ); // 15 minutes
+
+            return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.REFRESH_TOKEN, { accessToken: newAccessToken });
+        } catch (error) {
+            if (error instanceof UnauthorizedException) throw error;
+            const message = error instanceof Error ? error.message : 'Cannot refresh token';
+            throw new InternalServerErrorException(message);
+        }
+    }
+
+    async logout(token: string | undefined) {
+        if (!token) {
+            return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGOUT, true);
+        }
+
+        // remove all token from redis
+        const userId = await this.tokenService.validateAccessToken(token);
+        console.log({ userId });
+        if (userId) {
+            await Promise.all([
+                this.cacheService.delRedis(`${userId}:${ACCESS_TOKEN}`),
+                this.cacheService.delRedis(`${userId}:${REFRESH_TOKEN}`),
+            ]);
+        }
+
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGOUT, true);
     }
 }

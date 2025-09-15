@@ -33,8 +33,13 @@ export const SUCCESS_MESSAGES = {
     USER: {
         PROFILE_UPDATED: 'Profile updated successfully',
     },
+    MAIL: {
+        SEND_LOGIN_MAGIC_LINK: 'Send login magic link successfully',
+    },
 };
 
 export const MEMORY_CACHE_TTL = 60000;
+
 export const ACCESS_TOKEN = 'access-token';
 export const REFRESH_TOKEN = 'refresh-token';
+export const MAGIC_LINK = 'magic_link';

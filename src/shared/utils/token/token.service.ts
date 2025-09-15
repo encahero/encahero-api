@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { ERROR_MESSAGES } from 'src/constants';
+import { ERROR_MESSAGES, MAGIC_LINK } from 'src/constants';
 import { CacheService } from 'src/redis/redis.service';
 import { getAccessTokenKey, getRefreshTokenKey } from '../func/redis-key';
 
@@ -12,6 +12,7 @@ type JwtPayload = {
 
 type JwtMagicPayload = {
     email: string;
+    isRegister: boolean;
 };
 
 @Injectable()
@@ -42,10 +43,10 @@ export class TokenService {
         );
     }
 
-    async generateMagicToken(email: string): Promise<string> {
+    async generateMagicToken(email: string, isRegister: boolean = false): Promise<string> {
         return await this.jwtService.signAsync(
-            { email },
-            { expiresIn: '5m', secret: this.configService.get('MAGIC_KEY') },
+            { email, isRegister },
+            { expiresIn: this.configService.get('MAGIC_TOKEN_EXPIRE'), secret: this.configService.get('MAGIC_KEY') },
         );
     }
 
@@ -96,13 +97,20 @@ export class TokenService {
         }
     }
 
-    async validateMagicToken(token: string): Promise<string | null> {
+    async validateMagicToken(token: string): Promise<{ email: string; isRegister: boolean } | null> {
         try {
             const payload = await this.jwtService.verifyAsync<JwtMagicPayload>(token, {
                 secret: this.configService.get('MAGIC_KEY'),
             });
 
-            return payload.email;
+            const { email, isRegister } = payload;
+
+            const redisToken = await this.cacheService.getRedis<string>(`${email}:${MAGIC_LINK}`);
+            if (redisToken !== token) {
+                throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
+            }
+
+            return { email, isRegister };
         } catch {
             return null;
         }

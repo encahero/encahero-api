@@ -1,17 +1,10 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { MagicLinkAuthDto } from './dto/magic-link-auth.dto';
 import { EPRequestdto } from './dto/ep-request.dto';
 
 @Controller('auth')
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
-
-    @Get('/')
-    getToken(@Query('token') token: string) {
-        console.log({ token });
-        return this.authService.magicLogin(token);
-    }
 
     @Post('login')
     login(@Body() loginDto: EPRequestdto) {
@@ -23,14 +16,16 @@ export class AuthController {
         return this.authService.register(registerDto);
     }
 
-    @Post('magic-login-link')
-    magicLoginLink(@Body() email: MagicLinkAuthDto) {
-        return this.authService.sendLoginMagicLink(email);
+    @Get('magic-link')
+    getToken(@Query('token') token: string) {
+        console.log({ token });
+        return this.authService.magicLink(token);
     }
 
-    @Post('magic-register-link')
-    magicRegisterLink(@Body() email: MagicLinkAuthDto) {
-        return this.authService.registerWithMagicLink(email);
+    @Post('magic-link')
+    magicLoginLink(@Body('token') token: string, @Body('deviceId') deviceId: string) {
+        console.log('post ');
+        return this.authService.magicAuth(token, deviceId);
     }
 
     @Post('google-login')

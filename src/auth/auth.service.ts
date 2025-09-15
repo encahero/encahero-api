@@ -1,5 +1,4 @@
 import {
-    BadRequestException,
     ConflictException,
     HttpStatus,
     Injectable,
@@ -7,7 +6,6 @@ import {
     NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
-import { MagicLinkAuthDto } from './dto/magic-link-auth.dto';
 
 import { TokenService } from '../shared/utils/token/token.service';
 import { UsersService } from 'src/users/users.service';
@@ -18,11 +16,11 @@ import { CacheService } from 'src/redis/redis.service';
 import { successResponse } from 'src/common/response';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
-
-import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'src/constants';
+import { ERROR_MESSAGES, MAGIC_LINK, SUCCESS_MESSAGES } from 'src/constants';
 import { getAccessTokenKey, getRefreshTokenKey } from 'src/shared/utils/func/redis-key';
 import { EPRequestdto } from './dto/ep-request.dto';
 import bcrypt from 'bcrypt';
+import { User } from 'src/users/entities/user.entity';
 type GGPayLoad = {
     email: string;
     given_name: string;
@@ -107,71 +105,58 @@ export class AuthService {
         });
     }
 
-    async magicLogin(token: string) {
+    magicLink(token: string) {
         // Redirect về app với JWT
         return `<html>
-    <body>
-      <script>
-        // Redirect tới app bằng custom scheme
-        window.location = "encahero://auth/login?jwt=${token}";
-      </script>
-      <p>If nothing happens, click <a href="encahero://auth/login?jwt=${token}"> encahero://auth/login?jwt=${token} here</a></p>
-    </body>
-  </html>`;
+                <body>
+                    <meta http-equiv="refresh" content="0;url=encahero://login?jwt=${token}">
+                    <p>If nothing happens, click <a href="encahero://login?jwt=${token}">GO TO APP</a></p>
+                </body>
+                </html>`;
     }
 
-    sendLoginMagicLink(dto: MagicLinkAuthDto) {
-        console.log('Hello');
-        throw new BadRequestException();
-        // if user exists
+    async magicAuth(token: string, deviceId: string) {
+        // parse token
+        console.log(token);
+        const result = await this.tokenService.validateMagicToken(token);
 
-        // let user  = await this.userService.findByEmail(email);
-        // if (!user) {
-        //   // response error
-        //   return {
-        //     status: 'Not Found',
-        //     statusCode: 404,
-        //     message: 'User not found',
-        //   };
-        // }
-
-        // // generate a token
-        // const token = await this.tokenService.generateAccessToken(JSON.stringify(user.id));
-
-        // // generate deep link
-        // const magicLink = `http://encahero.com:3000/api/v1/auth?token=${token}`;
-
-        // console.log("debug here")
-        // // send mail
-        // await this.mailService.sendMagicLink(email, magicLink);
-        // return {
-        //   data: 'Check your email for the magic link',
-        // }
-    }
-
-    async registerWithMagicLink(dto: MagicLinkAuthDto) {
-        const { email } = dto;
-        // if user exists
-
-        const user = await this.userService.findByEmail(email);
-        if (user) {
-            // response error
-            return {
-                status: 'Conflict',
-                statusCode: 409,
-                message: 'User already exists ',
-            };
+        if (!result) {
+            throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
         }
 
-        // generate a token
-        // const token = await this.tokenService.generateAccessToken(email);
+        const { email, isRegister } = result;
+        console.log({ email, isRegister });
+        let user: User | null = null;
 
-        // generate deep link
-        // const magicLink = `${this.appName}/auth/magic-link?token=${token}`;
+        if (isRegister) {
+            const existingUser = await this.userService.findByEmail(email);
+            if (existingUser) {
+                throw new ConflictException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
+            }
 
-        // send mail
-        // await this.mailService.sendMagicLink(email, magicLink);
-        return 'This action adds a new auth';
+            // create user
+            user = await this.userService.create({
+                email,
+            });
+        } else {
+            console.log('here');
+            user = await this.userService.findByEmail(email);
+            if (!user) {
+                throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
+            }
+        }
+
+        const { accessToken, refreshToken } = await this.generateAndSaveTokens(JSON.stringify(user.id), deviceId);
+        const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+
+        // remove redis token
+        await this.cacheService.delRedis(`${user.email}:${MAGIC_LINK}`);
+
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            user: safeUser,
+        });
     }
 
     async ggLogin(token: string, deviceId: string) {

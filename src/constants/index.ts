@@ -6,6 +6,7 @@ export const ERROR_MESSAGES = {
         MISSING_TOKEN: 'Token Missing',
         ACCESS_TOKEN_EXPIRED: 'Access token expired',
         REFRESH_TOKEN_EXPIRED: 'Refresh token expired',
+        INVALID_PASSWORD: 'Wrong password',
     },
 
     USER: {

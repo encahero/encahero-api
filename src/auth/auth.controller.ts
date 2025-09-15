@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { MagicLinkAuthDto } from './dto/magic-link-auth.dto';
+import { EPRequestdto } from './dto/ep-request.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -11,6 +12,17 @@ export class AuthController {
         console.log({ token });
         return this.authService.magicLogin(token);
     }
+
+    @Post('login')
+    login(@Body() loginDto: EPRequestdto) {
+        return this.authService.login(loginDto);
+    }
+
+    @Post('register')
+    register(@Body() @Body() registerDto: EPRequestdto) {
+        return this.authService.register(registerDto);
+    }
+
     @Post('magic-login-link')
     magicLoginLink(@Body() email: MagicLinkAuthDto) {
         return this.authService.sendLoginMagicLink(email);

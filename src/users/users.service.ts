@@ -10,7 +10,8 @@ export class UsersService {
     constructor(@InjectRepository(User) private readonly userRepo: Repository<User>) {}
 
     create(createUserDto: CreateUserDto) {
-        return this.userRepo.save(createUserDto);
+        const user = this.userRepo.create(createUserDto);
+        return this.userRepo.save(user);
     }
 
     async findByEmail(email: string) {

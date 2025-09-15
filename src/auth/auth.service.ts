@@ -12,7 +12,6 @@ import { MagicLinkAuthDto } from './dto/magic-link-auth.dto';
 import { TokenService } from '../shared/utils/token/token.service';
 import { UsersService } from 'src/users/users.service';
 
-import { MailService } from 'src/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { CacheService } from 'src/redis/redis.service';
@@ -20,9 +19,10 @@ import { successResponse } from 'src/common/response';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
 
-import { ERROR_MESSAGES, SUCCESS_MESSAGES, ACCESS_TOKEN, REFRESH_TOKEN } from 'src/constants';
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from 'src/constants';
 import { getAccessTokenKey, getRefreshTokenKey } from 'src/shared/utils/func/redis-key';
-
+import { EPRequestdto } from './dto/ep-request.dto';
+import bcrypt from 'bcrypt';
 type GGPayLoad = {
     email: string;
     given_name: string;
@@ -38,13 +38,72 @@ export class AuthService {
     constructor(
         private readonly tokenService: TokenService,
         private readonly userService: UsersService,
-        private readonly mailService: MailService,
         private readonly configService: ConfigService,
         private readonly cacheService: CacheService,
     ) {
         this.authClient = new OAuth2Client({
             clientId: this.configService.get<string>('GG_CLIENT_ID'),
             clientSecret: this.configService.get<string>('GG_CLIENT_SECRET'),
+        });
+    }
+
+    async login(loginDto: EPRequestdto) {
+        // check DB if email exist
+        const { email, password, deviceId } = loginDto;
+        const user = await this.userService.findByEmail(email);
+
+        if (!user) {
+            throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
+        }
+
+        // check password
+        if (!user.password) {
+            throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_PASSWORD);
+        }
+
+        const isPasswordValid: boolean = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_PASSWORD);
+        }
+
+        // generate token
+        const { accessToken, refreshToken } = await this.generateAndSaveTokens(JSON.stringify(user.id), deviceId);
+
+        const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
+
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            user: safeUser,
+        });
+    }
+
+    async register(registerDto: EPRequestdto) {
+        const { email, password, deviceId } = registerDto;
+
+        // check if user already exists
+        const existingUser = await this.userService.findByEmail(email);
+        if (existingUser) {
+            throw new ConflictException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
+        }
+
+        // create user
+        const newUser = await this.userService.create({
+            email,
+            password,
+        });
+
+        // generate token
+        const { accessToken, refreshToken } = await this.generateAndSaveTokens(JSON.stringify(newUser.id), deviceId);
+
+        // convert to safe DTO
+        const safeUser = plainToInstance(UserResponseDto, newUser, { excludeExtraneousValues: true });
+
+        return successResponse(HttpStatus.CREATED, SUCCESS_MESSAGES.AUTH.REGISTER, {
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            user: safeUser,
         });
     }
 
@@ -132,28 +191,13 @@ export class AuthService {
             throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
         }
 
-        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id), deviceId);
-        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id), deviceId);
-
-        // save token to redis
-        await this.cacheService.setRedis(
-            getAccessTokenKey(JSON.stringify(user.id), deviceId),
-            jwt,
-            Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')),
-        );
-        await this.cacheService.setRedis(
-            getRefreshTokenKey(JSON.stringify(user.id), deviceId),
-            refresh,
-            Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')),
-        );
+        const { accessToken, refreshToken } = await this.generateAndSaveTokens(JSON.stringify(user.id), deviceId);
 
         const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
 
-        console.log({ safeUser });
-
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
-            accessToken: jwt,
-            refreshToken: refresh,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
             user: safeUser,
         });
     }
@@ -181,27 +225,13 @@ export class AuthService {
             lastName: payload.family_name,
             avatar: payload.picture,
         });
-
-        const jwt = await this.tokenService.generateAccessToken(JSON.stringify(user.id), deviceId);
-        const refresh = await this.tokenService.generateRefreshToken(JSON.stringify(user.id), deviceId);
-
-        // save token to redis
-        await this.cacheService.setRedis(
-            `${user.id}-${deviceId}:${ACCESS_TOKEN}`,
-            jwt,
-            Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')),
-        );
-        await this.cacheService.setRedis(
-            `${user.id}-${deviceId}:${REFRESH_TOKEN}`,
-            refresh,
-            Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')),
-        );
+        const { accessToken, refreshToken } = await this.generateAndSaveTokens(JSON.stringify(user.id), deviceId);
 
         const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
 
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.REGISTER, {
-            accessToken: jwt,
-            refreshToken: refresh,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
             user: safeUser,
         });
     }
@@ -259,5 +289,29 @@ export class AuthService {
         }
 
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGOUT, true);
+    }
+
+    private async generateAndSaveTokens(userId: string, deviceId: string) {
+        try {
+            const accessToken = await this.tokenService.generateAccessToken(userId, deviceId);
+            const refreshToken = await this.tokenService.generateRefreshToken(userId, deviceId);
+
+            await Promise.all([
+                this.cacheService.setRedis(
+                    getAccessTokenKey(userId, deviceId),
+                    accessToken,
+                    Number(this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE')),
+                ),
+                this.cacheService.setRedis(
+                    getRefreshTokenKey(userId, deviceId),
+                    refreshToken,
+                    Number(this.configService.get('REDIS_REFRESH_TOKEN_EXPIRE')),
+                ),
+            ]);
+
+            return { accessToken, refreshToken };
+        } catch (error) {
+            throw new InternalServerErrorException(error || 'generateAndSaveTokens() error');
+        }
     }
 }

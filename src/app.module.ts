@@ -12,6 +12,7 @@ import { DatabaseModule } from './database/database.module';
 import { CacheRedisModule } from './redis/redis.module';
 import { CustomConfigModule } from './config/custom-config.module';
 import { LoggerMiddleware } from './common/middleware/logger.middle';
+import { ProgressModule } from './progress/progress.module';
 
 @Module({
     imports: [
@@ -24,6 +25,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middle';
         CardsModule,
         BattleModule,
         AuthModule,
+        ProgressModule,
     ],
     controllers: [AppController],
     providers: [AppService],

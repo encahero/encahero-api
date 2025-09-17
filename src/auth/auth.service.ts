@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     ConflictException,
     HttpStatus,
     Injectable,
@@ -56,13 +57,13 @@ export class AuthService {
 
         // check password
         if (!user.password) {
-            throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_PASSWORD);
+            throw new BadRequestException(ERROR_MESSAGES.AUTH.INVALID_PASSWORD);
         }
 
         const isPasswordValid: boolean = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
-            throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_PASSWORD);
+            throw new BadRequestException(ERROR_MESSAGES.AUTH.INVALID_PASSWORD);
         }
 
         // generate token

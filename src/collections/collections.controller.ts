@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpStatus } from '@nestjs/common';
 import { CollectionsService } from './collections.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
 import { AuthGuard } from 'src/common/guard/auth.guard';
-import type AuthenticatedRequest from 'src/shared/interfaces/auth-request';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
+import { User } from 'src/common/decarators/user.decorator';
 
 @Controller('collections')
 export class CollectionsController {
@@ -20,6 +20,13 @@ export class CollectionsController {
     async findAll() {
         const data = await this.collectionsService.findAll();
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.FIND_ALL, data);
+    }
+
+    @UseGuards(AuthGuard)
+    @Get('my-collection')
+    async getMyCollection(@User('id') userId: number) {
+        const data = await this.collectionsService.getMyCollection(userId);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.GET_OWN, data);
     }
 
     @Get(':id')
@@ -39,8 +46,8 @@ export class CollectionsController {
 
     @UseGuards(AuthGuard)
     @Post('register/:id')
-    register(@Param('id') id: string, @Body('taskNum') taskNum: number, @Req() req: AuthenticatedRequest) {
-        const userId = req.user!.userId;
-        return this.collectionsService.register(+id, +taskNum, userId);
+    async register(@Param('id') id: string, @Body('taskNum') taskNum: number, @User('id') userId: number) {
+        const data = await this.collectionsService.register(+id, +taskNum, userId);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.REGISTER, data);
     }
 }

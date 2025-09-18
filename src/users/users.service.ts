@@ -18,13 +18,16 @@ export class UsersService {
         return this.userRepo.findOne({ where: { email } });
     }
 
+    async findById(id: number) {
+        return this.userRepo.findOne({ where: { id } });
+    }
     findAll() {
         return {
             data: 'Hello',
         };
     }
 
-    async findOne(id: number) {
+    findOne(id: number) {
         return `This action returns a #${id} user`;
     }
 

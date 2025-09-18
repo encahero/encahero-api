@@ -10,8 +10,8 @@ export const ERROR_MESSAGES = {
     },
 
     USER: {
-        USER_NOT_FOUND: 'User not found',
-        USER_ALREADY_EXISTS: 'User already exists',
+        NOT_FOUND: 'User not found',
+        ALREADY_EXISTS: 'User already exists',
     },
     SERVER: {
         UNEXPECTED: 'Unexpected error',
@@ -20,6 +20,11 @@ export const ERROR_MESSAGES = {
     VALIDATION: {
         EMAIL_INVALID: 'Email is not valid',
         REQUIRED_FIELD: 'Missing required field',
+    },
+
+    COLLECTION: {
+        NOT_FOUND: 'Collection not found',
+        ALREADY_REGISTERED: 'You are already registered this collection',
     },
 } as const;
 
@@ -43,6 +48,8 @@ export const SUCCESS_MESSAGES = {
 
     COLLECTION: {
         FIND_ALL: 'Find all collection successfully',
+        REGISTER: 'Register collection successfully',
+        GET_OWN: 'Get own collection successfully',
     },
 
     CATEGORY: {

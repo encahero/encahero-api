@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Collection } from 'src/collections/entities/collection.entity';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 export enum CollectionStatus {
-    ACTIVE = 'active',
+    IN_PROGRESS = 'in_progress',
     STOPPED = 'stopped',
     COMPLETED = 'completed',
 }
@@ -17,14 +18,12 @@ export class UserCollectionProgress {
     @Column()
     collection_id: number;
 
-    @Column({ default: 0 })
+    @ManyToOne(() => Collection, (collection) => collection.userProgress, { eager: true })
+    @JoinColumn({ name: 'collection_id' })
+    collection: Collection;
+
+    // calculate
     total_words: number;
-
-    @Column({ default: 0 })
-    learned_word_count: number;
-
-    @Column({ default: 0 })
-    mastered_word_count: number;
 
     @Column({ type: 'timestamp', nullable: true })
     last_reviewed_at: Date;
@@ -38,7 +37,7 @@ export class UserCollectionProgress {
     @Column({ type: 'timestamp', nullable: true })
     started_at: Date;
 
-    @Column({ type: 'enum', enum: CollectionStatus, default: CollectionStatus.ACTIVE })
+    @Column({ type: 'enum', enum: CollectionStatus, default: CollectionStatus.IN_PROGRESS })
     status: CollectionStatus;
 
     @Column({ type: 'timestamp', nullable: true })

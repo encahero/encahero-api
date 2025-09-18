@@ -1,16 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Collection } from './entities/collection.entity';
 import { Repository } from 'typeorm';
-import { User } from 'src/users/entities/user.entity';
+import { ERROR_MESSAGES } from 'src/constants';
+import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/user-collection-progress.entity';
 
 @Injectable()
 export class CollectionsService {
     constructor(
         @InjectRepository(Collection) private readonly collectionRepo: Repository<Collection>,
-        // @InjectRepository(User) private readonly userRepo: Repository<User>,
+        @InjectRepository(UserCollectionProgress)
+        private readonly userCollectionProgressRepo: Repository<UserCollectionProgress>,
     ) {}
 
     create(createCollectionDto: CreateCollectionDto) {
@@ -39,8 +41,39 @@ export class CollectionsService {
     }
 
     async register(id: number, taskNum: number, userId: number) {
-        console.log({ id, taskNum, userId });
-        // const user = await this.userRepo.findOne();
-        return 'this is register collection';
+        const collection = await this.collectionRepo.findOne({ where: { id } });
+        if (!collection) throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
+
+        // check if registered
+        const existingProgress = await this.userCollectionProgressRepo.findOne({
+            where: { user_id: userId, collection_id: id },
+        });
+
+        if (existingProgress) throw new ConflictException(ERROR_MESSAGES.COLLECTION.ALREADY_REGISTERED);
+
+        const newProgress = this.userCollectionProgressRepo.create({
+            user_id: userId,
+            collection_id: id,
+            started_at: new Date(),
+            status: CollectionStatus.IN_PROGRESS,
+        });
+
+        await this.userCollectionProgressRepo.save(newProgress);
+
+        return {
+            collection: newProgress,
+        };
+    }
+
+    async getMyCollection(userId: number) {
+        const collections = await this.userCollectionProgressRepo
+            .createQueryBuilder('progress')
+            .leftJoinAndSelect('progress.collection', 'collection')
+            .where('progress.user_id = :userId', { userId })
+            .select(['progress', 'collection.id', 'collection.name'])
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
+            .getMany();
+
+        return collections;
     }
 }

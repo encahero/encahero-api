@@ -1,7 +1,6 @@
 import {
     BadRequestException,
     ConflictException,
-    HttpStatus,
     Injectable,
     InternalServerErrorException,
     NotFoundException,
@@ -14,10 +13,9 @@ import { UsersService } from 'src/users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
 import { CacheService } from 'src/redis/redis.service';
-import { successResponse } from 'src/common/response';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
-import { ERROR_MESSAGES, MAGIC_LINK, SUCCESS_MESSAGES } from 'src/constants';
+import { ERROR_MESSAGES, MAGIC_LINK } from 'src/constants';
 import { getAccessTokenKey, getRefreshTokenKey } from 'src/shared/utils/func/redis-key';
 import { EPRequestdto } from './dto/ep-request.dto';
 import bcrypt from 'bcrypt';
@@ -32,12 +30,11 @@ type GGPayLoad = {
 
 @Injectable()
 export class AuthService {
-    private readonly appName: string = `${process.env.APP_NAME}`;
     private authClient: OAuth2Client;
     constructor(
         private readonly tokenService: TokenService,
-        private readonly userService: UsersService,
         private readonly configService: ConfigService,
+        private readonly userService: UsersService,
         private readonly cacheService: CacheService,
     ) {
         this.authClient = new OAuth2Client({
@@ -52,12 +49,7 @@ export class AuthService {
         const user = await this.userService.findByEmail(email);
 
         if (!user) {
-            throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
-        }
-
-        // check password
-        if (!user.password) {
-            throw new BadRequestException(ERROR_MESSAGES.AUTH.INVALID_PASSWORD);
+            throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND);
         }
 
         const isPasswordValid: boolean = await bcrypt.compare(password, user.password);
@@ -84,7 +76,7 @@ export class AuthService {
         // check if user already exists
         const existingUser = await this.userService.findByEmail(email);
         if (existingUser) {
-            throw new ConflictException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
+            throw new ConflictException(ERROR_MESSAGES.USER.ALREADY_EXISTS);
         }
 
         // create user
@@ -131,7 +123,7 @@ export class AuthService {
         if (isRegister) {
             const existingUser = await this.userService.findByEmail(email);
             if (existingUser) {
-                throw new ConflictException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
+                throw new ConflictException(ERROR_MESSAGES.USER.ALREADY_EXISTS);
             }
 
             // create user
@@ -141,7 +133,7 @@ export class AuthService {
         } else {
             user = await this.userService.findByEmail(email);
             if (!user) {
-                throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
+                throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND);
             }
         }
 
@@ -172,7 +164,7 @@ export class AuthService {
 
         const user = await this.userService.findByEmail(payload.email);
         if (!user) {
-            throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
+            throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND);
         }
 
         const { accessToken, refreshToken } = await this.generateAndSaveTokens(JSON.stringify(user.id), deviceId);
@@ -199,7 +191,7 @@ export class AuthService {
 
         let user = await this.userService.findByEmail(payload.email);
         if (user) {
-            throw new ConflictException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
+            throw new ConflictException(ERROR_MESSAGES.USER.ALREADY_EXISTS);
         }
 
         // create user
@@ -255,13 +247,13 @@ export class AuthService {
 
     async logout(token: string | undefined) {
         if (!token) {
-            return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGOUT, true);
+            return true;
         }
 
         // remove all token from redis
         const result = await this.tokenService.validateAccessToken(token);
         if (!result) {
-            return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGOUT, true);
+            return true;
         }
 
         const { userId, deviceId } = result;

@@ -24,7 +24,7 @@ export class MailService {
         const user = await this.userService.findByEmail(email);
 
         if (!user) {
-            throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
+            throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND);
         }
 
         // generate a token
@@ -57,7 +57,7 @@ export class MailService {
         const user = await this.userService.findByEmail(email);
 
         if (user) {
-            throw new ConflictException(ERROR_MESSAGES.USER.USER_ALREADY_EXISTS);
+            throw new ConflictException(ERROR_MESSAGES.USER.ALREADY_EXISTS);
         }
 
         // generate a token

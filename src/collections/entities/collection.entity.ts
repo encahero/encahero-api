@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Card } from 'src/cards/entities/card.entity';
+import { UserCollectionProgress } from 'src/progress/entities/user-collection-progress.entity';
 
 @Entity('collections')
 export class Collection {
@@ -25,6 +26,9 @@ export class Collection {
 
     @OneToMany(() => Card, (card) => card.collection)
     cards: Card[];
+
+    @OneToMany(() => UserCollectionProgress, (progress) => progress.collection)
+    userProgress: UserCollectionProgress[];
 
     @Column({ default: 0 })
     register_count: number;

@@ -71,11 +71,11 @@ export class AuthService {
 
         const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
 
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
+        return {
             accessToken: accessToken,
             refreshToken: refreshToken,
             user: safeUser,
-        });
+        };
     }
 
     async register(registerDto: EPRequestdto) {
@@ -99,11 +99,11 @@ export class AuthService {
         // convert to safe DTO
         const safeUser = plainToInstance(UserResponseDto, newUser, { excludeExtraneousValues: true });
 
-        return successResponse(HttpStatus.CREATED, SUCCESS_MESSAGES.AUTH.REGISTER, {
+        return {
             accessToken: accessToken,
             refreshToken: refreshToken,
             user: safeUser,
-        });
+        };
     }
 
     magicLink(token: string) {
@@ -118,7 +118,6 @@ export class AuthService {
 
     async magicAuth(token: string, deviceId: string) {
         // parse token
-        console.log(token);
         const result = await this.tokenService.validateMagicToken(token);
 
         if (!result) {
@@ -126,7 +125,7 @@ export class AuthService {
         }
 
         const { email, isRegister } = result;
-        console.log({ email, isRegister });
+
         let user: User | null = null;
 
         if (isRegister) {
@@ -140,7 +139,6 @@ export class AuthService {
                 email,
             });
         } else {
-            console.log('here');
             user = await this.userService.findByEmail(email);
             if (!user) {
                 throw new NotFoundException(ERROR_MESSAGES.USER.USER_NOT_FOUND);
@@ -153,11 +151,11 @@ export class AuthService {
         // remove redis token
         await this.cacheService.delRedis(`${user.email}:${MAGIC_LINK}`);
 
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
+        return {
             accessToken: accessToken,
             refreshToken: refreshToken,
             user: safeUser,
-        });
+        };
     }
 
     async ggLogin(token: string, deviceId: string) {
@@ -181,11 +179,11 @@ export class AuthService {
 
         const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
 
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGIN, {
+        return {
             accessToken: accessToken,
             refreshToken: refreshToken,
             user: safeUser,
-        });
+        };
     }
 
     async ggRegister(token: string, deviceId: string) {
@@ -215,11 +213,11 @@ export class AuthService {
 
         const safeUser = plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
 
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.REGISTER, {
+        return {
             accessToken: accessToken,
             refreshToken: refreshToken,
             user: safeUser,
-        });
+        };
     }
 
     async refreshToken(token: string) {
@@ -247,7 +245,7 @@ export class AuthService {
                 this.configService.get('REDIS_ACCESS_TOKEN_EXPIRE'),
             ); // 15 minutes
 
-            return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.REFRESH_TOKEN, { accessToken: newAccessToken });
+            return { accessToken: newAccessToken };
         } catch (error) {
             if (error instanceof UnauthorizedException) throw error;
             const message = error instanceof Error ? error.message : 'Cannot refresh token';
@@ -274,7 +272,7 @@ export class AuthService {
             ]);
         }
 
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.LOGOUT, true);
+        return true;
     }
 
     private async generateAndSaveTokens(userId: string, deviceId: string) {

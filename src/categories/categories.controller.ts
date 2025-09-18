@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { successResponse } from 'src/common/response';
+import { SUCCESS_MESSAGES } from 'src/constants';
 
 @Controller('categories')
 export class CategoriesController {
@@ -13,8 +15,9 @@ export class CategoriesController {
     }
 
     @Get()
-    findAll() {
-        return this.categoriesService.findAll();
+    async findAll() {
+        const data = await this.categoriesService.findAll();
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.FIND_ALL, data);
     }
 
     @Get(':id')

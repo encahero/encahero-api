@@ -18,7 +18,7 @@ export class AuthGuard implements CanActivate {
 
         if (!result) throw new UnauthorizedException(ERROR_MESSAGES.AUTH.ACCESSS_INVALID_TOKEN);
         const { userId, deviceId } = result;
-        request.user = { userId, deviceId };
+        request.user = { userId: Number(userId), deviceId };
 
         return true;
     }

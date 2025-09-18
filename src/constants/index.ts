@@ -36,6 +36,18 @@ export const SUCCESS_MESSAGES = {
     MAIL: {
         SEND_LOGIN_MAGIC_LINK: 'Send login magic link successfully',
     },
+
+    CARD: {
+        FIND_ALL: 'Find all card successfully',
+    },
+
+    COLLECTION: {
+        FIND_ALL: 'Find all collection successfully',
+    },
+
+    CATEGORY: {
+        FIND_ALL: 'Find all category successfully',
+    },
 };
 
 export const MEMORY_CACHE_TTL = 60000;

@@ -18,6 +18,8 @@ export class CategoriesService {
             .createQueryBuilder('category')
             .loadRelationCountAndMap('category.collection_count', 'category.collections')
             .getMany();
+
+        console.log({ categories });
         return categories;
     }
 

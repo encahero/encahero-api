@@ -11,10 +11,17 @@ import {
 } from 'typeorm';
 
 export enum CardType {
-    VOCAB = 'vocab',
-    PHRASE = 'phrase',
-    IDIOM = 'idiom',
-    OTHER = 'other',
+    NOUN = 'noun', // danh từ
+    VERB = 'verb', // động từ
+    ADJECTIVE = 'adjective', // tính từ
+    ADVERB = 'adverb', // trạng từ
+    PRONOUN = 'pronoun', // đại từ
+    PREPOSITION = 'preposition', // giới từ
+    CONJUNCTION = 'conjunction', // liên từ
+    INTERJECTION = 'interjection', // thán từ
+    PHRASE = 'phrase', // cụm từ
+    IDIOM = 'idiom', // thành ngữ
+    OTHER = 'other', // loại khác
 }
 
 @Entity('cards')
@@ -30,13 +37,13 @@ export class Card {
     @Column()
     main_word: string;
 
-    @Column('simple-array', { nullable: true })
+    @Column('simple-json', { nullable: true })
     vn_wrongs: string[];
 
     @Column()
     vn_correct: string;
 
-    @Column('simple-array', { nullable: true })
+    @Column('simple-json', { nullable: true })
     en_wrongs: string[];
 
     @Column()
@@ -45,13 +52,13 @@ export class Card {
     @Column({ nullable: true })
     meaning: string;
 
-    @Column('simple-array', { nullable: true })
+    @Column('simple-json', { nullable: true })
     ex: string[];
 
     @Column({ nullable: true })
     image_url: string;
 
-    @Column({ type: 'enum', enum: CardType, default: CardType.VOCAB })
+    @Column({ type: 'enum', enum: CardType, default: CardType.OTHER })
     type: CardType;
 
     @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

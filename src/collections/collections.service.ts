@@ -55,6 +55,7 @@ export class CollectionsService {
             user_id: userId,
             collection_id: id,
             started_at: new Date(),
+            last_reviewed_at: new Date(),
             status: CollectionStatus.IN_PROGRESS,
         });
 
@@ -75,5 +76,47 @@ export class CollectionsService {
             .getMany();
 
         return collections;
+    }
+
+    async stopCollection(id: number, userId: number) {
+        const progress = await this.userCollectionProgressRepo.findOne({
+            where: { user_id: userId, collection_id: id, status: CollectionStatus.IN_PROGRESS },
+        });
+
+        if (!progress) {
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_REGISTED_OR_NOT_IN_PROGRESS);
+        }
+
+        progress.status = CollectionStatus.STOPPED;
+        progress.stopped_at = new Date();
+
+        await this.userCollectionProgressRepo.save(progress);
+
+        return {
+            collectionId: id,
+            status: progress.status,
+            stopedAt: progress.started_at,
+        };
+    }
+
+    async changeTaskCount(id: number, userId: number, taskCount: number) {
+        const progress = await this.userCollectionProgressRepo.findOne({
+            where: { user_id: userId, collection_id: id, status: CollectionStatus.IN_PROGRESS },
+        });
+
+        if (!progress) {
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_REGISTED_OR_NOT_IN_PROGRESS);
+        }
+
+        progress.task_count = taskCount;
+
+        await this.userCollectionProgressRepo.save(progress);
+
+        return {
+            collectionId: id,
+            status: progress.status,
+            taskCount: progress.task_count,
+            stopedAt: progress.started_at,
+        };
     }
 }

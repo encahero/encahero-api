@@ -25,6 +25,11 @@ export const ERROR_MESSAGES = {
     COLLECTION: {
         NOT_FOUND: 'Collection not found',
         ALREADY_REGISTERED: 'You are already registered this collection',
+        NOT_REGISTED_OR_NOT_IN_PROGRESS: 'Collection not in progress or your are not registered',
+    },
+
+    CARD: {
+        NOT_FOUND: 'Card not found',
     },
 } as const;
 
@@ -49,11 +54,18 @@ export const SUCCESS_MESSAGES = {
     COLLECTION: {
         FIND_ALL: 'Find all collection successfully',
         REGISTER: 'Register collection successfully',
+        STOP: 'Stop collection successfully',
         GET_OWN: 'Get own collection successfully',
     },
 
     CATEGORY: {
         FIND_ALL: 'Find all category successfully',
+    },
+
+    QUIZ: {
+        RAMDOM_FROM_COLLECTION: 'Random quiz from collection successfully',
+        RAMDOM: 'Random quiz from successfully',
+        ANSWER: 'Answer quiz from successfully',
     },
 };
 

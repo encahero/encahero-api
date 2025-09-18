@@ -31,6 +31,6 @@ export class UserCardProgress {
     @Column({ type: 'enum', enum: CardStatus, default: CardStatus.ACTIVE })
     status: CardStatus;
 
-    @Column({ type: 'enum', enum: CardRating, nullable: true })
+    @Column({ type: 'enum', enum: CardRating, nullable: true, default: CardRating.E })
     rating: CardRating;
 }

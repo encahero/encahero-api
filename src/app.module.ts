@@ -13,6 +13,7 @@ import { CacheRedisModule } from './redis/redis.module';
 import { CustomConfigModule } from './config/custom-config.module';
 import { LoggerMiddleware } from './common/middleware/logger.middle';
 import { ProgressModule } from './progress/progress.module';
+import { QuizModule } from './quiz/quiz.module';
 
 @Module({
     imports: [
@@ -26,6 +27,7 @@ import { ProgressModule } from './progress/progress.module';
         BattleModule,
         AuthModule,
         ProgressModule,
+        QuizModule,
     ],
     controllers: [AppController],
     providers: [AppService],

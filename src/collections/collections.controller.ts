@@ -50,4 +50,18 @@ export class CollectionsController {
         const data = await this.collectionsService.register(+id, +taskNum, userId);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.REGISTER, data);
     }
+
+    @UseGuards(AuthGuard)
+    @Post('stop/:id')
+    async stopCollection(@Param('id') id: string, @User('id') userId: number) {
+        const data = await this.collectionsService.stopCollection(+id, userId);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.STOP, data);
+    }
+
+    @UseGuards(AuthGuard)
+    @Patch(':id/task_count')
+    async changeTaskCount(@Param('id') id: string, @User('id') userId: number, @Body('task_count') taskCount: number) {
+        const data = await this.collectionsService.changeTaskCount(+id, userId, taskCount);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.STOP, data);
+    }
 }

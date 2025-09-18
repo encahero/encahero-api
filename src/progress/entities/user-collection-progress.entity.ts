@@ -25,6 +25,9 @@ export class UserCollectionProgress {
     // calculate
     total_words: number;
 
+    @Column({ default: 20 })
+    task_count: number;
+
     @Column({ type: 'timestamp', nullable: true })
     last_reviewed_at: Date;
 

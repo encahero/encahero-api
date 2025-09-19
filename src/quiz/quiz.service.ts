@@ -7,6 +7,7 @@ import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/
 import { Repository } from 'typeorm';
 import { AnswerDto, QuestionType } from './dto/answer.dto';
 import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
+import { format } from 'date-fns';
 
 @Injectable()
 export class QuizService {
@@ -94,7 +95,7 @@ export class QuizService {
 
         // increase daily progress
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+        const todayStr = format(now, 'yyyy-MM-dd');
         let dailyProgress = await this.userDailyProgressRepo.findOne({
             where: { user_id: userId, date: todayStr },
         });
@@ -113,7 +114,7 @@ export class QuizService {
 
         // increase today learned count of collection
 
-        const lastReviewStr = registered.last_reviewed_at?.toISOString().split('T')[0];
+        const lastReviewStr = format(registered.last_reviewed_at, 'yyyy-MM-dd');
         if (todayStr !== lastReviewStr) {
             // Qua ngày mới → reset count
             registered.today_learned_count = 0;

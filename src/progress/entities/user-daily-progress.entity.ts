@@ -6,7 +6,7 @@ export class UserDailyProgress {
     user_id: number;
 
     @PrimaryColumn({ type: 'date' })
-    date: string; // YYYY-MM-DD
+    date: string;
 
     @Column({ default: 0 })
     card_answered: number;

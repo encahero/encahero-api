@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,11 +6,15 @@ import { Collection } from './entities/collection.entity';
 import { Repository } from 'typeorm';
 import { ERROR_MESSAGES } from 'src/constants';
 import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/user-collection-progress.entity';
+import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-progress.entity';
+import { Card } from 'src/cards/entities/card.entity';
 
 @Injectable()
 export class CollectionsService {
     constructor(
         @InjectRepository(Collection) private readonly collectionRepo: Repository<Collection>,
+        @InjectRepository(UserCardProgress) private readonly userCardProgressRepo: Repository<UserCardProgress>,
+        @InjectRepository(Card) private readonly cardRepo: Repository<Card>,
         @InjectRepository(UserCollectionProgress)
         private readonly userCollectionProgressRepo: Repository<UserCollectionProgress>,
     ) {}
@@ -40,7 +44,7 @@ export class CollectionsService {
         return `This action removes a #${id} collection`;
     }
 
-    async register(id: number, taskNum: number, userId: number) {
+    async registerCollection(id: number, taskNum: number, userId: number) {
         const collection = await this.collectionRepo.findOne({ where: { id } });
         if (!collection) throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
 
@@ -66,7 +70,7 @@ export class CollectionsService {
         };
     }
 
-    async getMyCollection(userId: number) {
+    async getMyOwnCollection(userId: number) {
         const collections = await this.userCollectionProgressRepo
             .createQueryBuilder('progress')
             .leftJoinAndSelect('progress.collection', 'collection')
@@ -78,17 +82,21 @@ export class CollectionsService {
         return collections;
     }
 
-    async stopCollection(id: number, userId: number) {
+    async updateStatusOfUserCollection(id: number, userId: number, status: CollectionStatus) {
         const progress = await this.userCollectionProgressRepo.findOne({
-            where: { user_id: userId, collection_id: id, status: CollectionStatus.IN_PROGRESS },
+            where: { user_id: userId, collection_id: id },
         });
 
         if (!progress) {
-            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_REGISTED_OR_NOT_IN_PROGRESS);
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
         }
 
-        progress.status = CollectionStatus.STOPPED;
-        progress.stopped_at = new Date();
+        if (status === CollectionStatus.COMPLETED)
+            throw new ForbiddenException(ERROR_MESSAGES.COLLECTION.CANNOT_CHANGE_TO_COMPLETE_STATUS);
+
+        progress.status = status;
+
+        if (status === CollectionStatus.STOPPED) progress.stopped_at = new Date();
 
         await this.userCollectionProgressRepo.save(progress);
 
@@ -99,7 +107,7 @@ export class CollectionsService {
         };
     }
 
-    async changeTaskCount(id: number, userId: number, taskCount: number) {
+    async updateTaskCountOfUserCollection(id: number, userId: number, taskCount: number) {
         const progress = await this.userCollectionProgressRepo.findOne({
             where: { user_id: userId, collection_id: id, status: CollectionStatus.IN_PROGRESS },
         });
@@ -118,5 +126,47 @@ export class CollectionsService {
             taskCount: progress.task_count,
             stopedAt: progress.started_at,
         };
+    }
+
+    async updateCardStatus(collectionId: number, cardId: number, userId: number, status: CardStatus) {
+        // check card exist
+        const card = await this.userCardProgressRepo.findOne({
+            where: {
+                collection_id: collectionId,
+                card_id: cardId,
+                user_id: userId,
+            },
+        });
+
+        if (!card) throw new NotFoundException(ERROR_MESSAGES.CARD.CARD_PROGRESS_NOT_FOUND);
+        card.status = status;
+
+        await this.userCardProgressRepo.save(card);
+
+        return card;
+    }
+
+    async findCardsOfCollection(collectionId: number) {
+        // check collection
+        const collection = await this.collectionRepo.find({ where: { id: collectionId } });
+
+        if (!collection) throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
+
+        const cards = await this.cardRepo.find({ where: { collection: { id: collectionId } } });
+
+        return cards ?? [];
+    }
+
+    async findMasteredCardsOfCollection(collectionId: number, userId: number) {
+        // check collection
+        const collection = await this.userCollectionProgressRepo.find({ where: { id: collectionId, user_id: userId } });
+
+        if (!collection) throw new NotFoundException(ERROR_MESSAGES.COLLECTION.COLLECTION_PROGRESS_NOT_FOUND);
+
+        const cards = await this.userCardProgressRepo.find({
+            where: { collection_id: collectionId, user_id: userId, status: CardStatus.MASTERED },
+        });
+
+        return cards ?? [];
     }
 }

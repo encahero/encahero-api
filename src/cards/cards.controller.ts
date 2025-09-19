@@ -4,6 +4,7 @@ import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
+import { User } from 'src/common/decarators/user.decorator';
 
 @Controller('cards')
 export class CardsController {

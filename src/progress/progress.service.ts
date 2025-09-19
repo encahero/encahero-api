@@ -1,26 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { CreateProgressDto } from './dto/create-progress.dto';
-import { UpdateProgressDto } from './dto/update-progress.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { UserDailyProgress } from './entities/user-daily-progress.entity';
+import { Repository } from 'typeorm';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
+
+interface WeekProgress {
+    total: string | null;
+}
 
 @Injectable()
 export class ProgressService {
-  create(createProgressDto: CreateProgressDto) {
-    return 'This action adds a new progress';
-  }
+    constructor(
+        @InjectRepository(UserDailyProgress) private readonly userDailyProgressRepo: Repository<UserDailyProgress>,
+    ) {}
 
-  findAll() {
-    return `This action returns all progress`;
-  }
+    async getStasDailyAndWeekly(userId: number) {
+        const now = new Date();
+        const todayStr = format(now, 'yyyy-MM-dd');
 
-  findOne(id: number) {
-    return `This action returns a #${id} progress`;
-  }
+        // Get today learned cards
+        const todayProgress = await this.userDailyProgressRepo.findOne({
+            where: { user_id: userId, date: todayStr },
+        });
 
-  update(id: number, updateProgressDto: UpdateProgressDto) {
-    return `This action updates a #${id} progress`;
-  }
+        const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
+        const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
 
-  remove(id: number) {
-    return `This action removes a #${id} progress`;
-  }
+        const weekProgress: WeekProgress | undefined = await this.userDailyProgressRepo
+            .createQueryBuilder('udp')
+            .select('SUM(udp.card_answered)', 'total')
+            .where('udp.user_id = :userId', { userId })
+            .andWhere('udp.date BETWEEN :start AND :end', {
+                start: format(weekStart, 'yyyy-MM-dd'),
+                end: format(weekEnd, 'yyyy-MM-dd'),
+            })
+            .getRawOne();
+
+        const today = todayProgress?.card_answered || 0;
+        const week = parseInt(weekProgress?.total || '0', 10);
+
+        return { today, week };
+    }
 }

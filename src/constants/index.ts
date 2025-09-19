@@ -24,12 +24,15 @@ export const ERROR_MESSAGES = {
 
     COLLECTION: {
         NOT_FOUND: 'Collection not found',
+        COLLECTION_PROGRESS_NOT_FOUND: 'Collection progress not found',
         ALREADY_REGISTERED: 'You are already registered this collection',
         NOT_REGISTED_OR_NOT_IN_PROGRESS: 'Collection not in progress or your are not registered',
+        CANNOT_CHANGE_TO_COMPLETE_STATUS: 'You can not change collection status to complete ! ',
     },
 
     CARD: {
         NOT_FOUND: 'Card not found',
+        CARD_PROGRESS_NOT_FOUND: 'Card progress not found',
     },
 } as const;
 
@@ -49,23 +52,31 @@ export const SUCCESS_MESSAGES = {
 
     CARD: {
         FIND_ALL: 'Find all card successfully',
+        CHANGE_STATUS: 'Change card status successfully',
+        FIND_ALL_CARD_OF_COLLECTION: 'Find all card of collection successfully',
     },
 
     COLLECTION: {
         FIND_ALL: 'Find all collection successfully',
         REGISTER: 'Register collection successfully',
-        STOP: 'Stop collection successfully',
+        CHANGE_STATUS: 'Change status of collection successfully',
+        CHANGE_TASK: 'Change task of collection successfully',
         GET_OWN: 'Get own collection successfully',
     },
 
     CATEGORY: {
         FIND_ALL: 'Find all category successfully',
+        FIND_COLLECTION_OF_CATEGORY: 'Find all collection of category successfully',
     },
 
     QUIZ: {
         RAMDOM_FROM_COLLECTION: 'Random quiz from collection successfully',
         RAMDOM: 'Random quiz from successfully',
         ANSWER: 'Answer quiz from successfully',
+    },
+
+    PROGRESS: {
+        STATS_DAILY_AND_WEEKLY: 'Get stats daily and weeklu successfully',
     },
 };
 

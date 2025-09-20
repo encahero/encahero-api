@@ -1,3 +1,4 @@
+import { ArrayMaxSize, ArrayMinSize } from 'class-validator';
 import { Collection } from 'src/collections/entities/collection.entity';
 import {
     Entity,
@@ -8,6 +9,8 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     Unique,
+    BeforeInsert,
+    BeforeUpdate,
 } from 'typeorm';
 
 export enum CardType {
@@ -25,7 +28,7 @@ export enum CardType {
 }
 
 @Entity('cards')
-@Unique(['collection', 'main_word', 'meaning'])
+@Unique(['collection', 'en_word', 'vn_word', 'meaning'])
 export class Card {
     @PrimaryGeneratedColumn()
     id: number;
@@ -35,27 +38,28 @@ export class Card {
     collection: Collection;
 
     @Column()
-    main_word: string;
+    en_word: string;
 
     @Column('simple-json', { nullable: true })
-    vn_wrongs: string[];
+    @ArrayMinSize(4, { message: 'vn_choice phải có ít nhất 4 phần tử' })
+    @ArrayMaxSize(4, { message: 'vn_choice chỉ được có tối đa 4 phần tử' })
+    vn_choice: string[];
 
     @Column()
-    vn_correct: string;
+    vn_word: string;
 
     @Column('simple-json', { nullable: true })
-    en_wrongs: string[];
+    @ArrayMinSize(4, { message: 'en_choice phải có ít nhất 4 phần tử' })
+    @ArrayMaxSize(4, { message: 'en_choice chỉ được có tối đa 4 phần tử' })
+    en_choice: string[];
 
     @Column()
-    en_correct: string;
-
-    @Column({ nullable: true })
     meaning: string;
 
     @Column('simple-json', { nullable: true })
     ex: string[];
 
-    @Column({ nullable: true })
+    @Column()
     image_url: string;
 
     @Column({ type: 'enum', enum: CardType, default: CardType.OTHER })
@@ -70,4 +74,36 @@ export class Card {
         onUpdate: 'CURRENT_TIMESTAMP',
     })
     updated_at: Date;
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    ensureVnChoiceContainsCorrect() {
+        if (!Array.isArray(this.vn_choice)) {
+            this.vn_choice = [];
+        }
+
+        let wrongs = this.vn_choice.filter((c) => c !== this.vn_word);
+
+        if (wrongs.length > 3) {
+            wrongs = wrongs.slice(0, 3);
+        }
+
+        this.vn_choice = [this.vn_word, ...wrongs];
+    }
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    ensureEnChoiceContainsCorrect() {
+        if (!Array.isArray(this.en_choice)) {
+            this.en_choice = [];
+        }
+
+        let wrongs = this.en_choice.filter((c) => c !== this.en_word);
+
+        if (wrongs.length > 3) {
+            wrongs = wrongs.slice(0, 3);
+        }
+
+        this.en_choice = [this.en_word, ...wrongs];
+    }
 }

@@ -9,6 +9,9 @@ import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/
 import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-progress.entity';
 import { Card } from 'src/cards/entities/card.entity';
 
+interface RawCollection {
+    mastered_card_count: string;
+}
 @Injectable()
 export class CollectionsService {
     constructor(
@@ -23,13 +26,34 @@ export class CollectionsService {
         return 'This action adds a new collection';
     }
 
-    async findAll() {
-        const collections = await this.collectionRepo
+    async findAll(userId?: number) {
+        const qb = this.collectionRepo
             .createQueryBuilder('collection')
-            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
-            .getMany();
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards');
 
-        return collections;
+        if (userId) {
+            qb.addSelect((subQuery) => {
+                return subQuery
+                    .select('COUNT(uc.id)', 'count')
+                    .from('user_collection_progress', 'uc')
+                    .where('uc.collection_id = collection.id')
+                    .andWhere('uc.user_id = :userId', { userId });
+            }, 'is_registered');
+        }
+
+        const collections = await qb.getRawAndEntities<{
+            is_registered?: number;
+        }>();
+
+        // Nếu có userId → map thêm is_registered
+        if (userId) {
+            return collections.entities.map((collection, index) => ({
+                ...collection,
+                is_registered: Number(collections.raw[index]['is_registered']) > 0,
+            }));
+        }
+
+        return collections.entities;
     }
 
     findOne(id: number) {
@@ -74,12 +98,26 @@ export class CollectionsService {
         const collections = await this.userCollectionProgressRepo
             .createQueryBuilder('progress')
             .leftJoinAndSelect('progress.collection', 'collection')
-            .where('progress.user_id = :userId', { userId })
-            .select(['progress', 'collection.id', 'collection.name'])
             .loadRelationCountAndMap('collection.card_count', 'collection.cards')
-            .getMany();
+            .select(['progress', 'collection.id', 'collection.name'])
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id')
+                        .andWhere('ucp.status = :status', { status: CardStatus.MASTERED }),
+                'mastered_card_count',
+            )
+            .where('progress.user_id = :userId', { userId })
+            .getRawAndEntities<RawCollection>();
 
-        return collections;
+        return collections.entities.map((c, index) => ({
+            ...c,
+            mastered_card_count: Number(collections.raw[index].mastered_card_count),
+            is_registered: true,
+        }));
     }
 
     async updateStatusOfUserCollection(id: number, userId: number, status: CollectionStatus) {

@@ -2,7 +2,7 @@ import { IsEnum, IsOptional } from 'class-validator';
 import { CardRating } from 'src/progress/entities/user-card-progress.entity';
 
 export enum QuestionType {
-    MULTICHOICE = 'multichoice',
+    MULTI_CHOICE = 'multi_choice',
     RATING = 'rating',
     TYPING = 'typing',
 }

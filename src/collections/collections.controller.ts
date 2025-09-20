@@ -8,6 +8,7 @@ import { SUCCESS_MESSAGES } from 'src/constants';
 import { User } from 'src/common/decarators/user.decorator';
 import { CollectionStatus } from 'src/progress/entities/user-collection-progress.entity';
 import { CardStatus } from 'src/progress/entities/user-card-progress.entity';
+import { OptionalAuthGuard } from 'src/common/guard/option-auth.guard';
 
 @Controller('collections')
 export class CollectionsController {
@@ -18,9 +19,10 @@ export class CollectionsController {
         return this.collectionsService.create(createCollectionDto);
     }
 
+    @UseGuards(OptionalAuthGuard)
     @Get()
-    async findAll() {
-        const data = await this.collectionsService.findAll();
+    async findAll(@User('id') userId: number) {
+        const data = await this.collectionsService.findAll(userId);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.FIND_ALL, data);
     }
 

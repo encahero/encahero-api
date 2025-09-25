@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
+import { OptionalAuthGuard } from 'src/common/guard/option-auth.guard';
+import { User } from 'src/common/decarators/user.decorator';
 
 @Controller('categories')
 export class CategoriesController {
@@ -19,10 +21,10 @@ export class CategoriesController {
         const data = await this.categoriesService.findAll();
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.FIND_ALL, data);
     }
-
+    @UseGuards(OptionalAuthGuard)
     @Get(':id/collection')
-    async findCollectionOfCategory(@Param('id') id: string) {
-        const data = await this.categoriesService.getCollectionOfCategory(+id);
+    async findCollectionOfCategory(@Param('id') id: string, @User('id') userId: number) {
+        const data = await this.categoriesService.getCollectionOfCategory(+id, userId);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.FIND_COLLECTION_OF_CATEGORY, data);
     }
 

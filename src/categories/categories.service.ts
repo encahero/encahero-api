@@ -26,15 +26,31 @@ export class CategoriesService {
         return categories;
     }
 
-    async getCollectionOfCategory(id: number) {
-        const collections = await this.collectionRepo
+    async getCollectionOfCategory(categoryId: number, userId?: number) {
+        const qb = this.collectionRepo
             .createQueryBuilder('collection')
             .leftJoinAndSelect('collection.category', 'category')
-            .where('category.id = :id', { id })
-            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
-            .getMany();
+            .where('category.id = :categoryId', { categoryId })
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards');
 
-        return collections;
+        if (userId) {
+            qb.addSelect((subQuery) => {
+                return subQuery
+                    .select('COUNT(uc.id)', 'count')
+                    .from('user_collection_progress', 'uc')
+                    .where('uc.collection_id = collection.id')
+                    .andWhere('uc.user_id = :userId', { userId });
+            }, 'is_registered');
+        }
+
+        const collections = await qb.getRawAndEntities<{ is_registered?: number }>();
+        if (userId) {
+            return collections.entities.map((collection, index) => ({
+                ...collection,
+                is_registered: Number(collections.raw[index]['is_registered']) > 0,
+            }));
+        }
+        return collections.entities;
     }
 
     findOne(id: number) {

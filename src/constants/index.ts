@@ -62,6 +62,7 @@ export const SUCCESS_MESSAGES = {
         CHANGE_STATUS: 'Change status of collection successfully',
         CHANGE_TASK: 'Change task of collection successfully',
         GET_OWN: 'Get own collection successfully',
+        GET_STOP_COLLECTION: 'Get stop collection successfully',
     },
 
     CATEGORY: {

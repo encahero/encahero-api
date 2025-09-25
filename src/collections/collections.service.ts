@@ -10,7 +10,8 @@ import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-pr
 import { Card } from 'src/cards/entities/card.entity';
 
 interface RawCollection {
-    mastered_card_count: string;
+    mastered_card_count: number;
+    learned_card_count?: number;
 }
 @Injectable()
 export class CollectionsService {
@@ -56,6 +57,44 @@ export class CollectionsService {
         return collections.entities;
     }
 
+    async getStopCollection(userId: number) {
+        const collections = await this.userCollectionProgressRepo
+            .createQueryBuilder('progress')
+            .leftJoinAndSelect('progress.collection', 'collection')
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
+            .select(['progress', 'collection.id', 'collection.name'])
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id')
+                        .andWhere('ucp.status = :status', { status: CardStatus.MASTERED }),
+                'mastered_card_count',
+            )
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id'),
+                'learned_card_count',
+            )
+            .where('progress.user_id = :userId and progress.status = :progressStatus', {
+                userId,
+                progressStatus: CollectionStatus.STOPPED,
+            })
+            .getRawAndEntities<RawCollection>();
+
+        return collections.entities.map((c, index) => ({
+            ...c.collection,
+            mastered_card_count: Number(collections.raw[index].mastered_card_count),
+            learned_card_count: Number(collections.raw[index].learned_card_count ?? 0),
+        }));
+    }
+
     findOne(id: number) {
         return `This action returns a #${id} collection`;
     }
@@ -84,8 +123,12 @@ export class CollectionsService {
             collection_id: id,
             started_at: new Date(),
             last_reviewed_at: new Date(),
+            task_count: taskNum,
             status: CollectionStatus.IN_PROGRESS,
         });
+
+        collection.register_count += 1;
+        await this.collectionRepo.save(collection);
 
         await this.userCollectionProgressRepo.save(newProgress);
 
@@ -110,12 +153,25 @@ export class CollectionsService {
                         .andWhere('ucp.status = :status', { status: CardStatus.MASTERED }),
                 'mastered_card_count',
             )
-            .where('progress.user_id = :userId', { userId })
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id'),
+                'learned_card_count',
+            )
+            .where('progress.user_id = :userId and progress.status = :progressStatus', {
+                userId,
+                progressStatus: CollectionStatus.IN_PROGRESS,
+            })
             .getRawAndEntities<RawCollection>();
 
         return collections.entities.map((c, index) => ({
             ...c,
             mastered_card_count: Number(collections.raw[index].mastered_card_count),
+            learned_card_count: Number(collections.raw[index].learned_card_count ?? 0),
             is_registered: true,
         }));
     }
@@ -161,27 +217,31 @@ export class CollectionsService {
         return {
             collectionId: id,
             status: progress.status,
-            taskCount: progress.task_count,
+            task_count: progress.task_count,
             stopedAt: progress.started_at,
         };
     }
 
     async updateCardStatus(collectionId: number, cardId: number, userId: number, status: CardStatus) {
-        // check card exist
-        const card = await this.userCardProgressRepo.findOne({
-            where: {
-                collection_id: collectionId,
-                card_id: cardId,
-                user_id: userId,
-            },
+        let userCardProgress = await this.userCardProgressRepo.findOne({
+            where: { user_id: userId, card_id: cardId, collection_id: collectionId },
         });
 
-        if (!card) throw new NotFoundException(ERROR_MESSAGES.CARD.CARD_PROGRESS_NOT_FOUND);
-        card.status = status;
+        if (!userCardProgress) {
+            userCardProgress = this.userCardProgressRepo.create({
+                user_id: userId,
+                card_id: cardId,
+                collection_id: collectionId,
+                learned_count: 0,
+            });
+        }
 
-        await this.userCardProgressRepo.save(card);
+        if (!userCardProgress) throw new NotFoundException(ERROR_MESSAGES.CARD.CARD_PROGRESS_NOT_FOUND);
+        userCardProgress.status = status;
 
-        return card;
+        await this.userCardProgressRepo.save(userCardProgress);
+
+        return userCardProgress;
     }
 
     async findCardsOfCollection(collectionId: number) {

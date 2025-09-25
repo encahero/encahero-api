@@ -33,6 +33,13 @@ export class CollectionsController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.GET_OWN, data);
     }
 
+    @UseGuards(AuthGuard)
+    @Get('stop')
+    async getStopCollection(@User('id', ParseIntPipe) userId: number) {
+        const data = await this.collectionsService.getStopCollection(userId);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.GET_STOP_COLLECTION, data);
+    }
+
     @Get(':id')
     findOne(@Param('id', ParseIntPipe) id: number) {
         return this.collectionsService.findOne(+id);
@@ -64,7 +71,7 @@ export class CollectionsController {
     async changeStatus(
         @Param('id', ParseIntPipe) id: number,
         @User('id', ParseIntPipe) userId: number,
-        @Body('status', ParseIntPipe) status: CollectionStatus,
+        @Body('status') status: CollectionStatus,
     ) {
         const data = await this.collectionsService.updateStatusOfUserCollection(+id, userId, status);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.CHANGE_STATUS, data);
@@ -75,9 +82,9 @@ export class CollectionsController {
     async changeTaskCount(
         @Param('id', ParseIntPipe) id: number,
         @User('id', ParseIntPipe) userId: number,
-        @Body('task_count', ParseIntPipe) taskCount: number,
+        @Body('taskNum', ParseIntPipe) taskNum: number,
     ) {
-        const data = await this.collectionsService.updateTaskCountOfUserCollection(+id, userId, taskCount);
+        const data = await this.collectionsService.updateTaskCountOfUserCollection(+id, userId, taskNum);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.CHANGE_TASK, data);
     }
 

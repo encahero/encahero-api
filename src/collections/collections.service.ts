@@ -8,6 +8,7 @@ import { ERROR_MESSAGES } from 'src/constants';
 import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/user-collection-progress.entity';
 import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-progress.entity';
 import { Card } from 'src/cards/entities/card.entity';
+import { BlobOptions } from 'buffer';
 
 interface RawCollection {
     mastered_card_count: number;
@@ -33,17 +34,19 @@ export class CollectionsService {
             .loadRelationCountAndMap('collection.card_count', 'collection.cards');
 
         if (userId) {
-            qb.addSelect((subQuery) => {
-                return subQuery
-                    .select('COUNT(uc.id)', 'count')
-                    .from('user_collection_progress', 'uc')
-                    .where('uc.collection_id = collection.id')
-                    .andWhere('uc.user_id = :userId', { userId });
-            }, 'is_registered');
+            qb.leftJoin('user_collection_progress', 'uc', 'uc.collection_id = collection.id AND uc.user_id = :userId', {
+                userId,
+            })
+                .addSelect('COUNT(uc.id) > 0', 'is_registered')
+                .addSelect("MAX(CASE WHEN uc.status = 'stopped' THEN 1 ELSE 0 END) = 1", 'is_stopped')
+                .addSelect("MAX(CASE WHEN uc.status = 'completed' THEN 1 ELSE 0 END) = 1", 'is_completed')
+                .groupBy('collection.id');
         }
 
         const collections = await qb.getRawAndEntities<{
             is_registered?: number;
+            is_stopped?: boolean;
+            is_completed?: boolean;
         }>();
 
         // Nếu có userId → map thêm is_registered
@@ -51,6 +54,8 @@ export class CollectionsService {
             return collections.entities.map((collection, index) => ({
                 ...collection,
                 is_registered: Number(collections.raw[index]['is_registered']) > 0,
+                is_stopped: Boolean(collections.raw[index]['is_stopped']),
+                is_completed: Boolean(collections.raw[index]['is_completed']),
             }));
         }
 
@@ -95,8 +100,50 @@ export class CollectionsService {
         }));
     }
 
-    findOne(id: number) {
-        return `This action returns a #${id} collection`;
+    async findOne(id: number, userId: number) {
+        const collections = await this.userCollectionProgressRepo
+            .createQueryBuilder('progress')
+            .leftJoinAndSelect('progress.collection', 'collection')
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
+            .select(['progress', 'collection.id', 'collection.name'])
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id')
+                        .andWhere('ucp.status = :status', { status: CardStatus.MASTERED }),
+                'mastered_card_count',
+            )
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id'),
+                'learned_card_count',
+            )
+            .where('progress.user_id = :userId AND progress.collection_id = :collectionId', {
+                userId,
+                collectionId: id,
+            })
+            .getRawAndEntities<RawCollection>();
+
+        if (!collections.entities.length) {
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
+        }
+
+        const c = collections.entities[0];
+        const raw = collections.raw[0];
+
+        return {
+            ...c, // trả về entity gốc
+            mastered_card_count: Number(raw.mastered_card_count),
+            learned_card_count: Number(raw.learned_card_count ?? 0),
+            is_registered: true,
+        };
     }
 
     update(id: number, updateCollectionDto: UpdateCollectionDto) {
@@ -162,9 +209,8 @@ export class CollectionsService {
                         .andWhere('ucp.collection_id = progress.collection_id'),
                 'learned_card_count',
             )
-            .where('progress.user_id = :userId and progress.status = :progressStatus', {
+            .where('progress.user_id = :userId', {
                 userId,
-                progressStatus: CollectionStatus.IN_PROGRESS,
             })
             .getRawAndEntities<RawCollection>();
 
@@ -244,15 +290,51 @@ export class CollectionsService {
         return userCardProgress;
     }
 
-    async findCardsOfCollection(collectionId: number) {
-        // check collection
-        const collection = await this.collectionRepo.find({ where: { id: collectionId } });
+    async findCardsOfCollection(collectionId: number, userId?: number) {
+        const query = this.cardRepo
+            .createQueryBuilder('card')
+            .leftJoinAndSelect('card.collection', 'collection')
+            .where('card.collection_id = :collectionId', { collectionId });
 
-        if (!collection) throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
+        if (userId) {
+            query
+                .leftJoinAndMapOne(
+                    'card.stats',
+                    'user_card_progress',
+                    'progress',
+                    'progress.card_id = card.id AND progress.user_id = :userId',
+                    { userId },
+                )
+                .select([
+                    'card.id',
+                    'card.en_word',
+                    'card.vn_word',
+                    'card.meaning',
+                    'card.image_url',
+                    'collection.id',
+                    'card.type',
+                    'progress.status',
+                    'progress.rating',
+                    'progress.learned_count',
+                ]);
+        } else {
+            query.select([
+                'card.id',
+                'card.en_word',
+                'card.vn_word',
+                'card.meaning',
+                'collection.id',
+                'card.type',
+                'card.image_url',
+            ]);
+        }
+        const cards = await query.getMany();
 
-        const cards = await this.cardRepo.find({ where: { collection: { id: collectionId } } });
+        if (!cards) {
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
+        }
 
-        return cards ?? [];
+        return cards;
     }
 
     async findMasteredCardsOfCollection(collectionId: number, userId: number) {

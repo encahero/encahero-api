@@ -34,6 +34,9 @@ export const ERROR_MESSAGES = {
         NOT_FOUND: 'Card not found',
         CARD_PROGRESS_NOT_FOUND: 'Card progress not found',
     },
+    QUIZ: {
+        MODE_NOT_FOUND: 'Quiz mode not found',
+    },
 } as const;
 
 export const SUCCESS_MESSAGES = {
@@ -58,6 +61,7 @@ export const SUCCESS_MESSAGES = {
 
     COLLECTION: {
         FIND_ALL: 'Find all collection successfully',
+        FIND_ONE: 'Find collection successfully',
         REGISTER: 'Register collection successfully',
         CHANGE_STATUS: 'Change status of collection successfully',
         CHANGE_TASK: 'Change task of collection successfully',

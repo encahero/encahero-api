@@ -35,14 +35,16 @@ export class CollectionsController {
 
     @UseGuards(AuthGuard)
     @Get('stop')
-    async getStopCollection(@User('id', ParseIntPipe) userId: number) {
-        const data = await this.collectionsService.getStopCollection(userId);
+    async getStopCollection(@User('id') userId: string) {
+        const data = await this.collectionsService.getStopCollection(Number(userId));
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.GET_STOP_COLLECTION, data);
     }
 
+    @UseGuards(AuthGuard)
     @Get(':id')
-    findOne(@Param('id', ParseIntPipe) id: number) {
-        return this.collectionsService.findOne(+id);
+    async findOne(@Param('id', ParseIntPipe) id: number, @User('id') userId: number) {
+        const data = await this.collectionsService.findOne(id, userId);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.FIND_ONE, data);
     }
 
     @Patch(':id')
@@ -102,9 +104,10 @@ export class CollectionsController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CARD.CHANGE_STATUS, data);
     }
 
+    @UseGuards(OptionalAuthGuard)
     @Get(':collectionId/cards')
-    async findCardsOfCollection(@Param('collectionId', ParseIntPipe) collectionId: number) {
-        const data = await this.collectionsService.findCardsOfCollection(collectionId);
+    async findCardsOfCollection(@Param('collectionId', ParseIntPipe) collectionId: number, @User('id') userId: number) {
+        const data = await this.collectionsService.findCardsOfCollection(collectionId, userId);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CARD.FIND_ALL_CARD_OF_COLLECTION, data);
     }
 

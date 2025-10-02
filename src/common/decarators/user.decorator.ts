@@ -4,6 +4,7 @@ export const User = createParamDecorator((data: 'id' | 'deviceId' | 'email' | un
     const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
 
     const user = request.user;
+    console.log('user.decorator - user:', user);
     if (!user) return null;
 
     switch (data) {

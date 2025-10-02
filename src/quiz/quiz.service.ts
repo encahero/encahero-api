@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { AnswerDto, QuestionType } from './dto/answer.dto';
 import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
 import { format } from 'date-fns';
+import type { RandomQuizMode } from 'src/shared/types';
 
 @Injectable()
 export class QuizService {
@@ -23,7 +24,7 @@ export class QuizService {
     ) {}
     async randomQuiz() {}
 
-    async randomQuizFromCollection(collectionId: number, userId: number, limit: number) {
+    async randomQuizFromCollection(collectionId: number, userId: number, mode: RandomQuizMode, limit: number) {
         const registered = await this.userCollectionProgressRepo.findOne({
             where: {
                 collection_id: collectionId,
@@ -42,12 +43,25 @@ export class QuizService {
                 'card_progress.card_id = card.id AND card_progress.user_id = :userId',
                 { userId },
             )
-            .where('card.collection_id = :collectionId', { collectionId })
-            .andWhere('(card_progress.status IS NULL or card_progress.status != :mastered)', {
-                mastered: CardStatus.MASTERED,
-            })
-            .orderBy('RANDOM()')
-            .limit(limit);
+            .where('card.collection_id = :collectionId', { collectionId });
+
+        switch (mode) {
+            case 'old':
+                query.andWhere('card_progress.status = :active', { active: CardStatus.ACTIVE });
+                break;
+            case 'new':
+                query.andWhere('card_progress.id IS NULL');
+                break;
+            case 'mixed':
+                query.andWhere('card_progress.status IN (:...statuses)', {
+                    statuses: [CardStatus.ACTIVE, CardStatus.MASTERED],
+                });
+                break;
+            default:
+                throw new NotFoundException(ERROR_MESSAGES.QUIZ.MODE_NOT_FOUND);
+        }
+
+        query.orderBy('RANDOM()').limit(limit);
 
         const cards = await query.getMany();
         return cards;

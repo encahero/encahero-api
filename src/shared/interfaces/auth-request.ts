@@ -5,5 +5,6 @@ export default interface AuthenticatedRequest extends Request {
         userId: number;
         email?: string;
         deviceId: string;
+        time_zone?: string;
     };
 }

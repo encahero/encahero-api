@@ -8,7 +8,7 @@ import { ERROR_MESSAGES } from 'src/constants';
 import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/user-collection-progress.entity';
 import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-progress.entity';
 import { Card } from 'src/cards/entities/card.entity';
-import { BlobOptions } from 'buffer';
+import dayjs from 'src/config/dayjs.config';
 
 interface RawCollection {
     mastered_card_count: number;
@@ -222,7 +222,8 @@ export class CollectionsService {
         };
     }
 
-    async getMyOwnCollection(userId: number) {
+    async getMyOwnCollection(userId: number, timeZone: string) {
+        console.log(timeZone);
         const collections = await this.userCollectionProgressRepo
             .createQueryBuilder('progress')
             .leftJoinAndSelect('progress.collection', 'collection')
@@ -251,6 +252,24 @@ export class CollectionsService {
                 userId,
             })
             .getRawAndEntities<RawCollection>();
+
+        const now = dayjs().tz(timeZone);
+        const resetList: typeof collections.entities = [];
+
+        for (const progress of collections.entities) {
+            const last = progress.last_reviewed_at;
+            if (!last || dayjs(last).tz(timeZone).format('YYYY-MM-DD') !== now.format('YYYY-MM-DD')) {
+                // Sang ngày mới theo timezone user
+                progress.today_learned_count = 0;
+                progress.last_reviewed_at = now.toDate();
+                resetList.push(progress);
+            }
+        }
+
+        // Lưu lại nếu có progress bị reset
+        if (resetList.length > 0) {
+            await this.userCollectionProgressRepo.save(resetList);
+        }
 
         return collections.entities.map((c, index) => ({
             ...c,

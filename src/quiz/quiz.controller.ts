@@ -30,7 +30,6 @@ export class QuizController {
         @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit = 5,
         @Query('mode', new DefaultValuePipe('old')) mode: RandomQuizMode,
     ) {
-        console.log(mode);
         const data = await this.quizService.randomQuizFromCollection(collectionId, userId, mode, limit);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.QUIZ.RAMDOM_FROM_COLLECTION, data);
     }

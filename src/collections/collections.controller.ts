@@ -28,8 +28,8 @@ export class CollectionsController {
 
     @UseGuards(AuthGuard)
     @Get('my-collection')
-    async getMyCollection(@User('id', ParseIntPipe) userId: number) {
-        const data = await this.collectionsService.getMyOwnCollection(userId);
+    async getMyCollection(@User('id') userId: number, @User('time_zone') timeZone: string) {
+        const data = await this.collectionsService.getMyOwnCollection(userId, timeZone);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.GET_OWN, data);
     }
 

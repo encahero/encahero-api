@@ -29,7 +29,7 @@ export class AuthGuard implements CanActivate {
             throw new UnauthorizedException(ERROR_MESSAGES.USER.NOT_FOUND);
         }
 
-        request.user = { userId: Number(userId), email: user.email, deviceId };
+        request.user = { userId: Number(userId), email: user.email, deviceId, time_zone: user.time_zone };
 
         return true;
     }

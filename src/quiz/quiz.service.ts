@@ -128,14 +128,6 @@ export class QuizService {
 
         await this.userDailyProgressRepo.save(dailyProgress);
 
-        // increase today learned count of collection
-
-        const lastReviewStr = format(registered.last_reviewed_at, 'yyyy-MM-dd');
-        if (todayStr !== lastReviewStr) {
-            // Qua ngày mới → reset count
-            registered.today_learned_count = 0;
-        }
-
         // tăng count hôm nay
         registered.today_learned_count++;
         registered.last_reviewed_at = now;

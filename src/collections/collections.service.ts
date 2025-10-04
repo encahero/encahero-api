@@ -100,6 +100,44 @@ export class CollectionsService {
         }));
     }
 
+    async getCompletedCollection(userId: number) {
+        const collections = await this.userCollectionProgressRepo
+            .createQueryBuilder('progress')
+            .leftJoinAndSelect('progress.collection', 'collection')
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
+            .select(['progress', 'collection.id', 'collection.name'])
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id')
+                        .andWhere('ucp.status = :status', { status: CardStatus.MASTERED }),
+                'mastered_card_count',
+            )
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCardProgress, 'ucp')
+                        .where('ucp.user_id = :userId', { userId })
+                        .andWhere('ucp.collection_id = progress.collection_id'),
+                'learned_card_count',
+            )
+            .where('progress.user_id = :userId and progress.status = :progressStatus', {
+                userId,
+                progressStatus: CollectionStatus.COMPLETED,
+            })
+            .getRawAndEntities<RawCollection>();
+
+        return collections.entities.map((c, index) => ({
+            ...c.collection,
+            mastered_card_count: Number(collections.raw[index].mastered_card_count),
+            learned_card_count: Number(collections.raw[index].learned_card_count ?? 0),
+        }));
+    }
+
     async findOne(id: number, userId: number) {
         const collections = await this.userCollectionProgressRepo
             .createQueryBuilder('progress')
@@ -283,11 +321,48 @@ export class CollectionsService {
         }
 
         if (!userCardProgress) throw new NotFoundException(ERROR_MESSAGES.CARD.CARD_PROGRESS_NOT_FOUND);
-        userCardProgress.status = status;
 
+        userCardProgress.status = status;
         await this.userCardProgressRepo.save(userCardProgress);
 
-        return userCardProgress;
+        let collectionCompleted = false;
+        // count card mastered
+        const masteredCards = await this.userCardProgressRepo.count({
+            where: { user_id: userId, collection_id: collectionId, status: CardStatus.MASTERED },
+        });
+
+        const totalCards = await this.cardRepo.count({ where: { collection: { id: collectionId } } });
+        console.log({ masteredCards, totalCards });
+
+        if (status === CardStatus.MASTERED) {
+            if (masteredCards >= totalCards) {
+                // complete collection
+                const collectionProgress = await this.userCollectionProgressRepo.findOne({
+                    where: { user_id: userId, collection_id: collectionId },
+                });
+                if (collectionProgress) {
+                    collectionProgress.status = CollectionStatus.COMPLETED;
+                    collectionProgress.completed_at = new Date();
+                    await this.userCollectionProgressRepo.save(collectionProgress);
+                    collectionCompleted = true;
+                }
+            }
+        } else if (status === CardStatus.ACTIVE) {
+            if (masteredCards === totalCards - 1) {
+                // complete collection
+                const collectionProgress = await this.userCollectionProgressRepo.findOne({
+                    where: { user_id: userId, collection_id: collectionId },
+                });
+                if (collectionProgress) {
+                    collectionProgress.status = CollectionStatus.IN_PROGRESS;
+                    collectionProgress.completed_at = null;
+                    await this.userCollectionProgressRepo.save(collectionProgress);
+                    collectionCompleted = false;
+                }
+            }
+        }
+
+        return { ...userCardProgress, collectionCompleted };
     }
 
     async findCardsOfCollection(collectionId: number, userId?: number) {

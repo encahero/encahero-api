@@ -48,6 +48,7 @@ export const SUCCESS_MESSAGES = {
     },
     USER: {
         PROFILE_UPDATED: 'Profile updated successfully',
+        UPDATE_TIMEZONE: 'Update timezone succesfully',
     },
     MAIL: {
         SEND_LOGIN_MAGIC_LINK: 'Send login magic link successfully',
@@ -67,6 +68,7 @@ export const SUCCESS_MESSAGES = {
         CHANGE_TASK: 'Change task of collection successfully',
         GET_OWN: 'Get own collection successfully',
         GET_STOP_COLLECTION: 'Get stop collection successfully',
+        GET_COMPLETED_COLLECTION: 'Get completed collection successfully',
     },
 
     CATEGORY: {

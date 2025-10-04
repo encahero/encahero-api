@@ -41,6 +41,13 @@ export class CollectionsController {
     }
 
     @UseGuards(AuthGuard)
+    @Get('completed')
+    async getCompletedCollection(@User('id') userId: string) {
+        const data = await this.collectionsService.getCompletedCollection(Number(userId));
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.GET_STOP_COLLECTION, data);
+    }
+
+    @UseGuards(AuthGuard)
     @Get(':id')
     async findOne(@Param('id', ParseIntPipe) id: number, @User('id') userId: number) {
         const data = await this.collectionsService.findOne(id, userId);

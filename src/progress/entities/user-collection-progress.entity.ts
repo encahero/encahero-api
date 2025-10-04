@@ -1,5 +1,21 @@
 import { Collection } from 'src/collections/entities/collection.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    ManyToOne,
+    JoinColumn,
+    AfterLoad,
+    BeforeInsert,
+    BeforeUpdate,
+} from 'typeorm';
+
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export enum CollectionStatus {
     IN_PROGRESS = 'in_progress',
@@ -28,7 +44,7 @@ export class UserCollectionProgress {
     @Column({ default: 20 })
     task_count: number;
 
-    @Column({ type: 'timestamp', nullable: true })
+    @Column({ type: 'timestamp without time zone', nullable: true })
     last_reviewed_at: Date;
 
     @Column({ default: 0 })
@@ -37,15 +53,21 @@ export class UserCollectionProgress {
     @Column({ default: 0 })
     today_learned_count: number;
 
-    @Column({ type: 'timestamp', nullable: true })
-    started_at: Date;
+    @Column({ type: 'timestamp without time zone', nullable: true })
+    started_at: Date | null;
 
     @Column({ type: 'enum', enum: CollectionStatus, default: CollectionStatus.IN_PROGRESS })
     status: CollectionStatus;
 
-    @Column({ type: 'timestamp', nullable: true })
-    stopped_at: Date;
+    @Column({ type: 'timestamp without time zone', nullable: true })
+    stopped_at: Date | null;
 
-    @Column({ type: 'timestamp', nullable: true })
-    completed_at: Date;
+    @Column({ type: 'timestamp without time zone', nullable: true })
+    completed_at: Date | null;
+
+    @BeforeUpdate()
+    logLastReviewedAt() {
+        const seoulTime = dayjs(this.last_reviewed_at).tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
+        console.log({ last_reviewed_at_in_seoul: seoulTime });
+    }
 }

@@ -29,7 +29,7 @@ export class QuizService {
             where: {
                 collection_id: collectionId,
                 user_id: userId,
-                status: CollectionStatus.IN_PROGRESS,
+                status: mode === 'recap' ? CollectionStatus.COMPLETED : CollectionStatus.IN_PROGRESS,
             },
         });
 
@@ -57,6 +57,9 @@ export class QuizService {
                     statuses: [CardStatus.ACTIVE, CardStatus.MASTERED],
                 });
                 break;
+            case 'recap':
+                query.andWhere('card_progress.status = :mastered', { mastered: CardStatus.MASTERED });
+                break;
             default:
                 throw new NotFoundException(ERROR_MESSAGES.QUIZ.MODE_NOT_FOUND);
         }
@@ -72,7 +75,6 @@ export class QuizService {
             where: {
                 collection_id: collectionId,
                 user_id: userId,
-                status: CollectionStatus.IN_PROGRESS,
             },
         });
 

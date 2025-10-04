@@ -13,4 +13,8 @@ export class UserResponseDto {
     lastName: string;
     @Expose()
     avatar: string;
+    @Expose()
+    time_zone: string;
+    @Expose()
+    create_at: Date;
 }

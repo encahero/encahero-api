@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
+
+import { ERROR_MESSAGES } from 'src/constants';
+import { plainToInstance } from 'class-transformer';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UsersService {
@@ -14,6 +18,16 @@ export class UsersService {
         return this.userRepo.save(user);
     }
 
+    async updateTimeZone(userId: number, timeZone: string) {
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        if (!user) throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND);
+        user.time_zone = timeZone;
+        const newUser = await this.userRepo.save(user);
+        const safeUser = plainToInstance(UserResponseDto, newUser, { excludeExtraneousValues: true });
+
+        return safeUser;
+    }
+
     async findByEmail(email: string) {
         return this.userRepo.findOne({ where: { email } });
     }
@@ -21,6 +35,7 @@ export class UsersService {
     async findById(id: number) {
         return this.userRepo.findOne({ where: { id } });
     }
+
     findAll() {
         return {
             data: 'Hello',

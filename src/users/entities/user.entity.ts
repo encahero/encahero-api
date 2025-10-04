@@ -29,6 +29,9 @@ export class User {
     @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
     updated_at: Date;
 
+    @Column({ nullable: true, default: 'UTC' })
+    time_zone: string;
+
     @BeforeInsert()
     async hashPassword() {
         if (this.password) {

@@ -11,8 +11,8 @@ export class ProgressController {
 
     @UseGuards(AuthGuard)
     @Get('stats/daily-and-weekly')
-    async getStasDailyAndWeekly(@User('id') userId: number) {
-        const data = await this.progressService.getStasDailyAndWeekly(userId);
+    async getStasDailyAndWeekly(@User('id') userId: number, @User('time_zone') timeZone: number) {
+        const data = await this.progressService.getStasDailyAndWeekly(userId, timeZone);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.PROGRESS.STATS_DAILY_AND_WEEKLY, data);
     }
 }

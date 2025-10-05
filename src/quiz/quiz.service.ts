@@ -7,7 +7,8 @@ import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/
 import { Repository } from 'typeorm';
 import { AnswerDto, QuestionType } from './dto/answer.dto';
 import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
-import { format } from 'date-fns';
+
+import dayjs from 'src/config/dayjs.config';
 import type { RandomQuizMode } from 'src/shared/types';
 
 @Injectable()
@@ -70,7 +71,7 @@ export class QuizService {
         return cards;
     }
 
-    async answerQuiz(collectionId: number, cardId: number, userId: number, answer: AnswerDto) {
+    async answerQuiz(collectionId: number, cardId: number, userId: number, answer: AnswerDto, timeZone: string) {
         const registered = await this.userCollectionProgressRepo.findOne({
             where: {
                 collection_id: collectionId,
@@ -111,15 +112,15 @@ export class QuizService {
 
         // increase daily progress
         const now = new Date();
-        const todayStr = format(now, 'yyyy-MM-dd');
+        const startOfDay = dayjs(now).tz(timeZone).startOf('day').toDate();
         let dailyProgress = await this.userDailyProgressRepo.findOne({
-            where: { user_id: userId, date: todayStr },
+            where: { user_id: userId, date: startOfDay },
         });
 
         if (!dailyProgress) {
             dailyProgress = this.userDailyProgressRepo.create({
                 user_id: userId,
-                date: todayStr,
+                date: startOfDay,
                 card_answered: 1,
             });
         } else {

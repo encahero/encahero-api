@@ -106,8 +106,9 @@ export class CollectionsController {
         @Param('cardId', ParseIntPipe) cardId: number,
         @User('id', ParseIntPipe) userId: number,
         @Body('status') status: CardStatus,
+        @User('time_zone') timeZone: string,
     ) {
-        const data = await this.collectionsService.updateCardStatus(collectionId, cardId, userId, status);
+        const data = await this.collectionsService.updateCardStatus(collectionId, cardId, userId, status, timeZone);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CARD.CHANGE_STATUS, data);
     }
 

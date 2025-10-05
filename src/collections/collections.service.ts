@@ -9,6 +9,7 @@ import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/
 import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-progress.entity';
 import { Card } from 'src/cards/entities/card.entity';
 import dayjs from 'src/config/dayjs.config';
+import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
 
 interface RawCollection {
     mastered_card_count: number;
@@ -22,6 +23,8 @@ export class CollectionsService {
         @InjectRepository(Card) private readonly cardRepo: Repository<Card>,
         @InjectRepository(UserCollectionProgress)
         private readonly userCollectionProgressRepo: Repository<UserCollectionProgress>,
+        @InjectRepository(UserDailyProgress)
+        private readonly userDailyProgressRepo: Repository<UserDailyProgress>,
     ) {}
 
     create(createCollectionDto: CreateCollectionDto) {
@@ -325,7 +328,7 @@ export class CollectionsService {
         };
     }
 
-    async updateCardStatus(collectionId: number, cardId: number, userId: number, status: CardStatus) {
+    async updateCardStatus(collectionId: number, cardId: number, userId: number, status: CardStatus, timeZone: string) {
         let userCardProgress = await this.userCardProgressRepo.findOne({
             where: { user_id: userId, card_id: cardId, collection_id: collectionId },
         });
@@ -351,27 +354,48 @@ export class CollectionsService {
         });
 
         const totalCards = await this.cardRepo.count({ where: { collection: { id: collectionId } } });
-        console.log({ masteredCards, totalCards });
+
+        const collectionProgress = await this.userCollectionProgressRepo.findOne({
+            where: { user_id: userId, collection_id: collectionId },
+        });
+
+        if (!collectionProgress) {
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
+        }
 
         if (status === CardStatus.MASTERED) {
+            const now = new Date();
+            collectionProgress.today_learned_count++;
+            collectionProgress.last_reviewed_at = now;
+
             if (masteredCards >= totalCards) {
-                // complete collection
-                const collectionProgress = await this.userCollectionProgressRepo.findOne({
-                    where: { user_id: userId, collection_id: collectionId },
-                });
-                if (collectionProgress) {
-                    collectionProgress.status = CollectionStatus.COMPLETED;
-                    collectionProgress.completed_at = new Date();
-                    await this.userCollectionProgressRepo.save(collectionProgress);
-                    collectionCompleted = true;
-                }
+                collectionProgress.status = CollectionStatus.COMPLETED;
+                collectionProgress.completed_at = new Date();
+                collectionCompleted = true;
             }
+
+            await this.userCollectionProgressRepo.save(collectionProgress);
+            userCardProgress.learned_count++;
+            await this.userCardProgressRepo.save(userCardProgress);
+
+            const startOfDay = dayjs(now).tz(timeZone).startOf('day').toDate();
+            let dailyProgress = await this.userDailyProgressRepo.findOne({
+                where: { user_id: userId, date: startOfDay },
+            });
+
+            if (!dailyProgress) {
+                dailyProgress = this.userDailyProgressRepo.create({
+                    user_id: userId,
+                    date: startOfDay,
+                    card_answered: 1,
+                });
+            } else {
+                dailyProgress.card_answered++;
+            }
+
+            await this.userDailyProgressRepo.save(dailyProgress);
         } else if (status === CardStatus.ACTIVE) {
             if (masteredCards === totalCards - 1) {
-                // complete collection
-                const collectionProgress = await this.userCollectionProgressRepo.findOne({
-                    where: { user_id: userId, collection_id: collectionId },
-                });
                 if (collectionProgress) {
                     collectionProgress.status = CollectionStatus.IN_PROGRESS;
                     collectionProgress.completed_at = null;

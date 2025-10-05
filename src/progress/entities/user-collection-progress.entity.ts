@@ -1,14 +1,5 @@
 import { Collection } from 'src/collections/entities/collection.entity';
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    ManyToOne,
-    JoinColumn,
-    AfterLoad,
-    BeforeInsert,
-    BeforeUpdate,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -64,10 +55,4 @@ export class UserCollectionProgress {
 
     @Column({ type: 'timestamp without time zone', nullable: true })
     completed_at: Date | null;
-
-    @BeforeUpdate()
-    logLastReviewedAt() {
-        const seoulTime = dayjs(this.last_reviewed_at).tz('Asia/Seoul').format('YYYY-MM-DD HH:mm:ss');
-        console.log({ last_reviewed_at_in_seoul: seoulTime });
-    }
 }

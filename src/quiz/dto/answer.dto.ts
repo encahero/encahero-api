@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
 import { CardRating } from 'src/progress/entities/user-card-progress.entity';
 
 export enum QuestionType {
@@ -14,4 +14,8 @@ export class AnswerDto {
     @IsOptional()
     @IsEnum(CardRating)
     ratingValue?: CardRating;
+
+    @IsOptional()
+    @IsBoolean()
+    isNew: boolean;
 }

@@ -34,7 +34,7 @@ export class QuizService {
             },
         });
 
-        if (!registered) throw new ForbiddenException(ERROR_MESSAGES.COLLECTION.NOT_REGISTED_OR_NOT_IN_PROGRESS);
+        if (!registered) throw new ForbiddenException(ERROR_MESSAGES.COLLECTION.NOT_REGISTERED_OR_NOT_IN_PROGRESS);
 
         const query = this.cardRepo
             .createQueryBuilder('card')
@@ -79,7 +79,7 @@ export class QuizService {
             },
         });
 
-        if (!registered) throw new ForbiddenException(ERROR_MESSAGES.COLLECTION.NOT_REGISTED_OR_NOT_IN_PROGRESS);
+        if (!registered) throw new ForbiddenException(ERROR_MESSAGES.COLLECTION.NOT_REGISTERED_OR_NOT_IN_PROGRESS);
 
         // check card exist
         const isCardExisting = await this.cardRepo.findOne({
@@ -107,8 +107,8 @@ export class QuizService {
         if (answer.questionType === QuestionType.RATING && answer.ratingValue) {
             userCardProgress.rating = answer.ratingValue;
         }
+
         userCardProgress.learned_count++;
-        await this.userCardProgressRepo.save(userCardProgress);
 
         // increase daily progress
         const now = new Date();
@@ -127,11 +127,15 @@ export class QuizService {
             dailyProgress.card_answered++;
         }
 
-        await this.userDailyProgressRepo.save(dailyProgress);
-
         // tăng count hôm nay
         registered.today_learned_count++;
         registered.last_reviewed_at = now;
+
+        if (answer?.isNew) {
+            registered.today_new_count++;
+        }
+        await this.userCardProgressRepo.save(userCardProgress);
+        await this.userDailyProgressRepo.save(dailyProgress);
         await this.userCollectionProgressRepo.save(registered);
         return true;
     }

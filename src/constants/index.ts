@@ -26,7 +26,7 @@ export const ERROR_MESSAGES = {
         NOT_FOUND: 'Collection not found',
         COLLECTION_PROGRESS_NOT_FOUND: 'Collection progress not found',
         ALREADY_REGISTERED: 'You are already registered this collection',
-        NOT_REGISTED_OR_NOT_IN_PROGRESS: 'Collection not in progress or your are not registered',
+        NOT_REGISTERED_OR_NOT_IN_PROGRESS: 'Collection not in progress or your are not registered',
         CANNOT_CHANGE_TO_COMPLETE_STATUS: 'You can not change collection status to complete ! ',
     },
 

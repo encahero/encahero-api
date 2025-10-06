@@ -226,7 +226,6 @@ export class CollectionsService {
     }
 
     async getMyOwnCollection(userId: number, timeZone: string) {
-        console.log(timeZone);
         const collections = await this.userCollectionProgressRepo
             .createQueryBuilder('progress')
             .leftJoinAndSelect('progress.collection', 'collection')
@@ -264,6 +263,7 @@ export class CollectionsService {
             if (!last || dayjs(last).tz(timeZone).format('YYYY-MM-DD') !== now.format('YYYY-MM-DD')) {
                 // Sang ngày mới theo timezone user
                 progress.today_learned_count = 0;
+                progress.today_new_count = 0;
                 progress.last_reviewed_at = now.toDate();
                 resetList.push(progress);
             }
@@ -313,7 +313,7 @@ export class CollectionsService {
         });
 
         if (!progress) {
-            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_REGISTED_OR_NOT_IN_PROGRESS);
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_REGISTERED_OR_NOT_IN_PROGRESS);
         }
 
         progress.task_count = taskCount;

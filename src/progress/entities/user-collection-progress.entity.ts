@@ -1,5 +1,5 @@
 import { Collection } from 'src/collections/entities/collection.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Check } from 'typeorm';
 
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -15,6 +15,7 @@ export enum CollectionStatus {
 }
 
 @Entity('user_collection_progress')
+@Check(`"today_new_count" <= "daily_new_limit"`)
 export class UserCollectionProgress {
     @PrimaryGeneratedColumn()
     id: number;
@@ -39,10 +40,13 @@ export class UserCollectionProgress {
     last_reviewed_at: Date;
 
     @Column({ default: 0 })
-    current_review_count: number;
+    today_learned_count: number;
 
     @Column({ default: 0 })
-    today_learned_count: number;
+    today_new_count: number;
+
+    @Column({ default: 5 })
+    daily_new_limit: number;
 
     @Column({ type: 'timestamp without time zone', nullable: true })
     started_at: Date | null;

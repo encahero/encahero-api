@@ -220,9 +220,15 @@ export class CollectionsService {
 
         await this.userCollectionProgressRepo.save(newProgress);
 
-        return {
-            collection: newProgress,
-        };
+        const progressWithCount = await this.userCollectionProgressRepo
+            .createQueryBuilder('progress')
+            .leftJoinAndSelect('progress.collection', 'collection')
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
+            .select(['progress', 'collection.id', 'collection.name'])
+            .where('progress.id = :id', { id: newProgress.id })
+            .getOne();
+
+        return progressWithCount;
     }
 
     async getMyOwnCollection(userId: number, timeZone: string) {

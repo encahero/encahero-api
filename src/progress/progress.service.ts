@@ -8,13 +8,18 @@ interface WeekProgress {
     total: string | null;
 }
 
+interface ContributionDto {
+    date: string;
+    count: number;
+}
+
 @Injectable()
 export class ProgressService {
     constructor(
         @InjectRepository(UserDailyProgress) private readonly userDailyProgressRepo: Repository<UserDailyProgress>,
     ) {}
 
-    async getStasDailyAndWeekly(userId: number, timeZone) {
+    async getStasDailyAndWeekly(userId: number, timeZone: string) {
         const now = new Date();
         const startOfDay = dayjs(now).tz(timeZone).startOf('day').toDate();
 
@@ -40,5 +45,22 @@ export class ProgressService {
         const week = parseInt(weekProgress?.total || '0', 10);
 
         return { today, week };
+    }
+
+    async getContribution(userId: number, timeZone: string) {
+        const contribution = await this.userDailyProgressRepo.find({
+            where: { user_id: userId },
+        });
+
+        // Convert date về timezone của người dùng
+        let converted: ContributionDto[] = [];
+        if (contribution.length > 0) {
+            converted = contribution.map((item) => ({
+                date: dayjs.utc(item.date).tz(timeZone).format('YYYY-MM-DD'),
+                count: item.card_answered,
+            }));
+        }
+
+        return converted;
     }
 }

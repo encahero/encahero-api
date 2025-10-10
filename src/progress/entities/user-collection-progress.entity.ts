@@ -1,13 +1,6 @@
 import { Collection } from 'src/collections/entities/collection.entity';
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Check } from 'typeorm';
 
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezone from 'dayjs/plugin/timezone';
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
-
 export enum CollectionStatus {
     IN_PROGRESS = 'in_progress',
     STOPPED = 'stopped',

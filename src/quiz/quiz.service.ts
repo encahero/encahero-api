@@ -71,7 +71,7 @@ export class QuizService {
         return cards;
     }
 
-    async answerQuiz(collectionId: number, cardId: number, userId: number, answer: AnswerDto, timeZone: string) {
+    async answerQuiz(collectionId: number, cardId: number, userId: number, answer: AnswerDto) {
         const registered = await this.userCollectionProgressRepo.findOne({
             where: {
                 collection_id: collectionId,
@@ -112,7 +112,8 @@ export class QuizService {
 
         // increase daily progress
         const now = new Date();
-        const startOfDay = dayjs(now).tz(timeZone).startOf('day').toDate();
+        const startOfDay = dayjs(now).startOf('day').toDate();
+
         let dailyProgress = await this.userDailyProgressRepo.findOne({
             where: { user_id: userId, date: startOfDay },
         });

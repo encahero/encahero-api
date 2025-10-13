@@ -19,9 +19,9 @@ export class ProgressService {
         @InjectRepository(UserDailyProgress) private readonly userDailyProgressRepo: Repository<UserDailyProgress>,
     ) {}
 
-    async getStasDailyAndWeekly(userId: number, timeZone: string) {
+    async getStasDailyAndWeekly(userId: number) {
         const now = new Date();
-        const startOfDay = dayjs(now).tz(timeZone).startOf('day').toDate();
+        const startOfDay = dayjs(now).startOf('day').toDate();
 
         // Get today learned cards
         const todayProgress = await this.userDailyProgressRepo.findOne({

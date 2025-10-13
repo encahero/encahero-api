@@ -40,9 +40,10 @@ export class QuizController {
         @Param('collectionId', ParseIntPipe) collectionId: number,
         @Param('cardId', ParseIntPipe) cardId: number,
         @User('id', ParseIntPipe) userId: number,
+        @User('time_zone') timeZone: string,
         @Body() answer: AnswerDto,
     ) {
-        const data = await this.quizService.answerQuiz(collectionId, cardId, userId, answer);
+        const data = await this.quizService.answerQuiz(collectionId, cardId, userId, timeZone, answer);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.QUIZ.ANSWER, data);
     }
 }

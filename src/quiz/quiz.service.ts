@@ -71,7 +71,7 @@ export class QuizService {
         return cards;
     }
 
-    async answerQuiz(collectionId: number, cardId: number, userId: number, answer: AnswerDto) {
+    async answerQuiz(collectionId: number, cardId: number, userId: number, timeZone: string, answer: AnswerDto) {
         const registered = await this.userCollectionProgressRepo.findOne({
             where: {
                 collection_id: collectionId,
@@ -111,17 +111,17 @@ export class QuizService {
         userCardProgress.learned_count++;
 
         // increase daily progress
-        const now = new Date();
-        const startOfDay = dayjs(now).startOf('day').toDate();
+        const now = dayjs().tz(timeZone);
+        const startOfDayUTC = now.startOf('day').utc().toDate();
 
         let dailyProgress = await this.userDailyProgressRepo.findOne({
-            where: { user_id: userId, date: startOfDay },
+            where: { user_id: userId, date: startOfDayUTC },
         });
 
         if (!dailyProgress) {
             dailyProgress = this.userDailyProgressRepo.create({
                 user_id: userId,
-                date: startOfDay,
+                date: startOfDayUTC,
                 card_answered: 1,
             });
         } else {
@@ -130,7 +130,7 @@ export class QuizService {
 
         // tăng count hôm nay
         registered.today_learned_count++;
-        registered.last_reviewed_at = now;
+        registered.last_reviewed_at = now.utc().toDate();
 
         if (answer?.isNew) {
             registered.today_new_count++;

@@ -4,6 +4,7 @@ import { User } from 'src/common/decarators/user.decorator';
 import { AuthGuard } from 'src/common/guard/auth.guard';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
+import { time } from 'console';
 
 @Controller('progress')
 export class ProgressController {
@@ -11,8 +12,8 @@ export class ProgressController {
 
     @UseGuards(AuthGuard)
     @Get('stats/daily-and-weekly')
-    async getStasDailyAndWeekly(@User('id') userId: number) {
-        const data = await this.progressService.getStasDailyAndWeekly(userId);
+    async getStasDailyAndWeekly(@User('id') userId: number, @User('time_zone') timeZone: string) {
+        const data = await this.progressService.getStasDailyAndWeekly(userId, timeZone);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.PROGRESS.STATS_DAILY_AND_WEEKLY, data);
     }
 

@@ -19,25 +19,29 @@ export class ProgressService {
         @InjectRepository(UserDailyProgress) private readonly userDailyProgressRepo: Repository<UserDailyProgress>,
     ) {}
 
-    async getStasDailyAndWeekly(userId: number) {
-        const now = new Date();
-        const startOfDay = dayjs(now).startOf('day').toDate();
+    async getStasDailyAndWeekly(userId: number, timeZone: string) {
+        const now = dayjs().tz(timeZone);
+        // Start of day UTC
+        const startOfDayUTC = now.startOf('day').utc().toDate();
 
         // Get today learned cards
         const todayProgress = await this.userDailyProgressRepo.findOne({
-            where: { user_id: userId, date: startOfDay },
+            where: { user_id: userId, date: startOfDayUTC },
         });
 
-        const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday
-        const weekEnd = endOfWeek(now, { weekStartsOn: 1 }); // Sunday
+        // Week range UTC
+        const weekStartLocal = startOfWeek(now.toDate(), { weekStartsOn: 1 }); // Monday
+        const weekEndLocal = endOfWeek(now.toDate(), { weekStartsOn: 1 }); // Sunday
+        const weekStartUTC = dayjs(weekStartLocal).tz(timeZone).startOf('day').utc().toDate();
+        const weekEndUTC = dayjs(weekEndLocal).tz(timeZone).endOf('day').utc().toDate();
 
         const weekProgress: WeekProgress | undefined = await this.userDailyProgressRepo
             .createQueryBuilder('udp')
             .select('SUM(udp.card_answered)', 'total')
             .where('udp.user_id = :userId', { userId })
             .andWhere('udp.date BETWEEN :start AND :end', {
-                start: format(weekStart, 'yyyy-MM-dd'),
-                end: format(weekEnd, 'yyyy-MM-dd'),
+                start: format(weekStartUTC, 'yyyy-MM-dd'),
+                end: format(weekEndUTC, 'yyyy-MM-dd'),
             })
             .getRawOne();
 

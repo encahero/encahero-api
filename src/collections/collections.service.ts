@@ -270,7 +270,7 @@ export class CollectionsService {
                 // Sang ngày mới theo timezone user
                 progress.today_learned_count = 0;
                 progress.today_new_count = 0;
-                progress.last_reviewed_at = now.toDate();
+                progress.last_reviewed_at = now.utc().toDate();
                 resetList.push(progress);
             }
         }

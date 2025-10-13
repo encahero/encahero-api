@@ -1,9 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
-
+import * as express from 'express';
 import { GlobalValidationPipe } from './common/pipes/validator.pipe';
 import { CustomExceptionsFilter } from './common/filter/custom-exception.filter';
+import path from 'path';
 
 async function bootstrap() {
     // const httpsOptions = {
@@ -19,6 +20,7 @@ async function bootstrap() {
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(GlobalValidationPipe);
     app.useGlobalFilters(new CustomExceptionsFilter());
+    app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
     await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 

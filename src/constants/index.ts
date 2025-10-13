@@ -83,7 +83,11 @@ export const SUCCESS_MESSAGES = {
     },
 
     PROGRESS: {
-        STATS_DAILY_AND_WEEKLY: 'Get stats daily and weeklu successfully',
+        STATS_DAILY_AND_WEEKLY: 'Get stats daily and weekly successfully',
+    },
+
+    FEEDBACK: {
+        CREATE: 'Create feedback successfully',
     },
 };
 

@@ -14,6 +14,7 @@ import { CustomConfigModule } from './config/custom-config.module';
 import { LoggerMiddleware } from './common/middleware/logger.middle';
 import { ProgressModule } from './progress/progress.module';
 import { QuizModule } from './quiz/quiz.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
     imports: [
@@ -28,6 +29,7 @@ import { QuizModule } from './quiz/quiz.module';
         AuthModule,
         ProgressModule,
         QuizModule,
+        FeedbackModule,
     ],
     controllers: [AppController],
     providers: [AppService],

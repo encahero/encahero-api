@@ -16,5 +16,5 @@ export class UserResponseDto {
     @Expose()
     time_zone: string;
     @Expose()
-    create_at: Date;
+    created_at: Date;
 }

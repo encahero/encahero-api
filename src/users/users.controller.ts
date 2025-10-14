@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpStatus } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    UseGuards,
+    HttpStatus,
+    UseInterceptors,
+    UploadedFile,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -6,6 +18,8 @@ import { AuthGuard } from 'src/common/guard/auth.guard';
 import { User } from 'src/common/decarators/user.decorator';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 @Controller('users')
 export class UsersController {
@@ -34,9 +48,27 @@ export class UsersController {
         return this.usersService.findOne(+id);
     }
 
+    @UseGuards(AuthGuard)
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-        return this.usersService.update(+id, updateUserDto);
+    @UseInterceptors(
+        FileInterceptor('avatar', {
+            storage: diskStorage({
+                destination: './uploads/avatars',
+                filename: (req, file, cb) => {
+                    const unique = Date.now() + '-' + Math.random().toString(36).slice(2);
+                    cb(null, unique + '-' + file.originalname);
+                },
+            }),
+        }),
+    )
+    async update(
+        @Param('id') id: string,
+        @User('id') userId: number,
+        @UploadedFile() file: Express.Multer.File,
+        @Body() updateUserDto: UpdateUserDto,
+    ) {
+        const data = await this.usersService.update(+id, userId, file, updateUserDto);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.UPDATE_PROFILE, data);
     }
 
     @Delete(':id')

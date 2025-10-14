@@ -52,6 +52,7 @@ export const SUCCESS_MESSAGES = {
     USER: {
         PROFILE_UPDATED: 'Profile updated successfully',
         UPDATE_TIMEZONE: 'Update timezone succesfully',
+        UPDATE_PROFILE: 'Update profile succesfully',
     },
     MAIL: {
         SEND_LOGIN_MAGIC_LINK: 'Send login magic link successfully',

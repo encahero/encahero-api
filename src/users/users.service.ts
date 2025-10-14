@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -46,8 +46,31 @@ export class UsersService {
         return `This action returns a #${id} user`;
     }
 
-    update(id: number, updateUserDto: UpdateUserDto) {
-        return `This action updates a #${id} user`;
+    async update(id: number, userId: number, file: Express.Multer.File, updateUserDto: UpdateUserDto) {
+        if (id !== userId) {
+            throw new ForbiddenException('You are not allowed to update another user');
+        }
+
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const filteredDto = Object.fromEntries(
+            Object.entries(updateUserDto).filter(([, v]) => v !== undefined && v !== null),
+        );
+
+        if (file) {
+            filteredDto['avatar'] = `/uploads/avatars/${file.filename}`;
+        }
+
+        Object.assign(user, filteredDto);
+
+        const savedUser = await this.userRepo.save(user);
+        const safeUser = plainToInstance(UserResponseDto, savedUser, { excludeExtraneousValues: true });
+
+        return safeUser;
     }
 
     remove(id: number) {

@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { ERROR_MESSAGES, MAGIC_LINK } from 'src/constants';
+import { ERROR_MESSAGES, MAGIC_LINK, RESET_TOKEN } from 'src/constants';
 import { CacheService } from 'src/redis/redis.service';
 import { getAccessTokenKey, getRefreshTokenKey } from '../func/redis-key';
 
@@ -47,6 +47,13 @@ export class TokenService {
         return await this.jwtService.signAsync(
             { email, isRegister },
             { expiresIn: this.configService.get('MAGIC_TOKEN_EXPIRE'), secret: this.configService.get('MAGIC_KEY') },
+        );
+    }
+
+    async generateResetToken(email: string): Promise<string> {
+        return await this.jwtService.signAsync(
+            { email },
+            { expiresIn: this.configService.get('RESET_TOKEN_EXPIRE'), secret: this.configService.get('RESET_KEY') },
         );
     }
 
@@ -111,6 +118,25 @@ export class TokenService {
             }
 
             return { email, isRegister };
+        } catch {
+            return null;
+        }
+    }
+
+    async validateResetToken(token: string): Promise<{ email: string } | null> {
+        try {
+            const payload = await this.jwtService.verifyAsync<{ email: string }>(token, {
+                secret: this.configService.get('RESET_KEY'),
+            });
+
+            const { email } = payload;
+
+            const redisToken = await this.cacheService.getRedis<string>(`${email}:${RESET_TOKEN}`);
+            if (redisToken !== token) {
+                throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_TOKEN);
+            }
+
+            return { email };
         } catch {
             return null;
         }

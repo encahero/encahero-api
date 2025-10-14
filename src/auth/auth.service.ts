@@ -15,7 +15,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { CacheService } from 'src/redis/redis.service';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from 'src/users/dto/user-response.dto';
-import { ERROR_MESSAGES, MAGIC_LINK } from 'src/constants';
+import { ERROR_MESSAGES, MAGIC_LINK, RESET_PASSWORD_OTP, RESET_TOKEN } from 'src/constants';
 import { getAccessTokenKey, getRefreshTokenKey } from 'src/shared/utils/func/redis-key';
 import { EPRequestdto } from './dto/ep-request.dto';
 import bcrypt from 'bcrypt';
@@ -263,6 +263,63 @@ export class AuthService {
                 this.cacheService.delRedis(getRefreshTokenKey(userId, deviceId)),
             ]);
         }
+
+        return true;
+    }
+
+    async verifyOTP(email: string, otp: number) {
+        const redisKey = `${email}:${RESET_PASSWORD_OTP}`;
+        const redisOtp = (await this.cacheService.getRedis(redisKey)) as string | null;
+
+        if (!redisOtp) {
+            throw new BadRequestException('OTP đã hết hạn hoặc chưa được gửi');
+        }
+
+        if (otp !== Number(redisOtp)) {
+            throw new BadRequestException('OTP không đúng');
+        }
+
+        const resetToken = await this.tokenService.generateResetToken(email);
+
+        if (resetToken) {
+            await this.cacheService.setRedis(`${email}:${RESET_TOKEN}`, resetToken, 60000 * 5);
+            await this.cacheService.delRedis(`${email}:${RESET_PASSWORD_OTP}`);
+        }
+
+        return { resetToken };
+    }
+
+    async resetPassword(password: string, token: string) {
+        // verify token
+        const result = await this.tokenService.validateResetToken(token);
+        if (!result) {
+            throw new BadRequestException(ERROR_MESSAGES.AUTH.RESET_TOKEN_INVALID);
+        }
+
+        const { email } = result;
+
+        const user: User | null = await this.userService.findByEmail(email);
+        if (!user) {
+            throw new NotFoundException(ERROR_MESSAGES.USER.NOT_FOUND);
+        }
+
+        // hash password
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // update password
+        user.password = hashedPassword;
+        await this.userService.save(user);
+
+        // revoke all tokens
+
+        // ✅ Revoke all tokens across all devices
+        const deletedCount = await this.cacheService.revokeAllUserTokens(user.id.toString());
+        console.log(`Revoked ${deletedCount} tokens for user ${user.id}`);
+
+        // remove token
+
+        await this.cacheService.delRedis(`${email}:${RESET_TOKEN}`);
 
         return true;
     }

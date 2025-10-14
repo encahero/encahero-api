@@ -6,6 +6,7 @@ export const ERROR_MESSAGES = {
         MISSING_TOKEN: 'Token Missing',
         ACCESS_TOKEN_EXPIRED: 'Access token expired',
         REFRESH_TOKEN_EXPIRED: 'Refresh token expired',
+        RESET_TOKEN_INVALID: 'Reset token invalid',
         INVALID_PASSWORD: 'Wrong password',
     },
 
@@ -45,6 +46,8 @@ export const SUCCESS_MESSAGES = {
         REGISTER: 'Register Successfully',
         LOGOUT: 'Logout Successfully',
         REFRESH_TOKEN: 'Refresh token successfully',
+        VERIFY_OTP: 'Verify OTP successfully',
+        RESET_PASSWORD: 'Reset password successfully',
     },
     USER: {
         PROFILE_UPDATED: 'Profile updated successfully',
@@ -52,6 +55,8 @@ export const SUCCESS_MESSAGES = {
     },
     MAIL: {
         SEND_LOGIN_MAGIC_LINK: 'Send login magic link successfully',
+        SEND_REGISTER_MAGIC_LINK: 'Send register magic link successfully',
+        SEND_RESET_PASSWORD_OTP: 'Send reset password otp successfully',
     },
 
     CARD: {
@@ -96,3 +101,5 @@ export const MEMORY_CACHE_TTL = 60000;
 export const ACCESS_TOKEN = 'access-token';
 export const REFRESH_TOKEN = 'refresh-token';
 export const MAGIC_LINK = 'magic_link';
+export const RESET_TOKEN = 'reset-token';
+export const RESET_PASSWORD_OTP = 'reset-password-otp';

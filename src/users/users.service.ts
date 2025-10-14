@@ -53,4 +53,8 @@ export class UsersService {
     remove(id: number) {
         return `This action removes a #${id} user`;
     }
+
+    async save(user: User) {
+        return await this.userRepo.save(user);
+    }
 }

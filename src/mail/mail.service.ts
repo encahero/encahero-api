@@ -1,10 +1,9 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { ConflictException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { MagicLinkAuthDto } from 'src/mail/dto/magic-link-auth.dto';
-import { ERROR_MESSAGES, MAGIC_LINK, SUCCESS_MESSAGES } from 'src/constants';
+import { ERROR_MESSAGES, MAGIC_LINK, RESET_PASSWORD_OTP } from 'src/constants';
 import { TokenService } from 'src/shared/utils/token/token.service';
 import { UsersService } from 'src/users/users.service';
-import { successResponse } from 'src/common/response';
 import { CacheService } from 'src/redis/redis.service';
 
 @Injectable()
@@ -47,7 +46,7 @@ export class MailService {
             html,
         });
 
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.MAIL.SEND_LOGIN_MAGIC_LINK, true);
+        return true;
     }
 
     async sendRegisterMagicLink(dto: MagicLinkAuthDto) {
@@ -80,6 +79,43 @@ export class MailService {
             html,
         });
 
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.MAIL.SEND_LOGIN_MAGIC_LINK, true);
+        return true;
+    }
+
+    async sendResetPasswordOTP(dto: MagicLinkAuthDto) {
+        const { email } = dto;
+
+        const user = await this.userService.findByEmail(email);
+
+        if (!user) {
+            throw new ConflictException(ERROR_MESSAGES.USER.NOT_FOUND);
+        }
+
+        // random 6 numbers
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        await this.cacheService.setRedis(`${email}:${RESET_PASSWORD_OTP}`, otp, 60000 * 5);
+
+        const html = `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <h2 style="color: #4CAF50;">Your OTP Code</h2>
+                    <p>We received a request to reset your password.</p>
+                    <p>Use the OTP below to continue:</p>
+                    <div style="font-size: 24px; font-weight: bold; padding: 10px 20px; background: #f4f4f4; display: inline-block; border-radius: 5px;">
+                    ${otp}
+                    </div>
+                    <p>This code will expire in <strong>5 minutes</strong>. If you did not request this, please ignore this email.</p>
+                    <hr/>
+                    <p style="font-size: 12px; color: #888;">This is an automated email, please do not reply.</p>
+                </div>
+        `;
+
+        await this.mailerService.sendMail({
+            to: email,
+            subject: 'Your OTP For Reset Password',
+            html,
+        });
+
+        return true;
     }
 }

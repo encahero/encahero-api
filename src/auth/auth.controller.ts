@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Query, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpStatus, ParseIntPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { EPRequestdto } from './dto/ep-request.dto';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -48,6 +49,18 @@ export class AuthController {
     async refreshToken(@Body('token') token: string) {
         const data = await this.authService.refreshToken(token);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.REFRESH_TOKEN, data);
+    }
+
+    @Post('reset-password')
+    async resetPassword(@Body('password') password: string, @Body('token') token: string) {
+        const data = await this.authService.resetPassword(password, token);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.RESET_PASSWORD, data);
+    }
+
+    @Post('verify-otp')
+    async verifyOTP(@Body() dto: VerifyOtpDto) {
+        const data = await this.authService.verifyOTP(dto.email, dto.otp);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.AUTH.VERIFY_OTP, data);
     }
 
     @Post('logout')

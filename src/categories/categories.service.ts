@@ -1,10 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Collection } from 'src/collections/entities/collection.entity';
+import { ERROR_MESSAGES } from 'src/constants';
 
 @Injectable()
 export class CategoriesService {
@@ -13,8 +12,14 @@ export class CategoriesService {
         @InjectRepository(Collection) private readonly collectionRepo: Repository<Collection>,
     ) {}
 
-    create(createCategoryDto: CreateCategoryDto) {
-        return 'This action adds a new category';
+    async create(categoryName: string) {
+        const existed = await this.categoryRepo.findOne({ where: { name: categoryName } });
+        if (existed) {
+            throw new BadRequestException(ERROR_MESSAGES.CATEGORY.EXISTED);
+        }
+
+        const category = this.categoryRepo.create({ name: categoryName });
+        return this.categoryRepo.save(category);
     }
 
     async findAll() {
@@ -57,11 +62,32 @@ export class CategoriesService {
         return `This action returns a #${id} category`;
     }
 
-    update(id: number, updateCategoryDto: UpdateCategoryDto) {
-        return `This action updates a #${id} category`;
+    async update(id: number, categoryName: string) {
+        const category = await this.categoryRepo.findOne({ where: { id } });
+        if (!category) throw new NotFoundException(ERROR_MESSAGES.CATEGORY.NOT_FOUND);
+
+        // Kiểm tra trùng tên (nếu cần)
+        const existed = await this.categoryRepo.findOne({ where: { name: categoryName } });
+        if (existed && existed.id !== id) {
+            throw new BadRequestException(ERROR_MESSAGES.CATEGORY.EXISTED);
+        }
+
+        category.name = categoryName;
+        return await this.categoryRepo.save(category);
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} category`;
+    async remove(id: number) {
+        const category = await this.categoryRepo.findOne({ where: { id }, relations: ['collections'] });
+        if (!category) {
+            throw new NotFoundException(ERROR_MESSAGES.CATEGORY.NOT_FOUND);
+        }
+
+        if (category.collections.length > 0) {
+            throw new BadRequestException(ERROR_MESSAGES.CATEGORY.HAVE_COLLECTION_WHEN_DELETE);
+        }
+
+        await this.categoryRepo.remove(category);
+
+        return true;
     }
 }

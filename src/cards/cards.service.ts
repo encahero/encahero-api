@@ -13,8 +13,16 @@ export class CardsService {
     }
 
     async findAll() {
-        const cards = await this.cardRepo.find({});
-        return cards;
+        const cards = await this.cardRepo.find({
+            relations: ['collection'], // load relation
+        });
+
+        // map ra collectionId và collectionName
+        return cards.map((card) => ({
+            ...card,
+            collectionId: card.collection.id,
+            collectionName: card.collection.name,
+        }));
     }
 
     findOne(id: number) {

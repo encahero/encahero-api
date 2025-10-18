@@ -1,5 +1,14 @@
-import { BeforeInsert, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+    BeforeInsert,
+    Column,
+    CreateDateColumn,
+    Entity,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
+} from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Feedback } from 'src/feedback/entities/feedback.entity';
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn()
@@ -31,6 +40,9 @@ export class User {
 
     @Column({ nullable: true, default: 'UTC' })
     time_zone: string;
+
+    @OneToMany(() => Feedback, (feedback) => feedback.user)
+    feedbacks: Feedback[];
 
     @BeforeInsert()
     async hashPassword() {

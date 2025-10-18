@@ -20,7 +20,20 @@ export class FeedbackService {
     }
 
     async findAll() {
-        const feedbacks = await this.feedbackRepo.find({});
+        const feedbacks = this.feedbackRepo
+            .createQueryBuilder('feedback')
+            .leftJoinAndSelect('feedback.user', 'user')
+            .select([
+                'feedback', // lấy tất cả các cột của feedback
+                'user.id', // bắt buộc lấy id nếu muốn join relation
+                'user.avatar',
+                'user.username',
+                'user.email',
+                'user.firstName',
+                'user.lastName',
+            ])
+            .orderBy('feedback.createdAt', 'DESC')
+            .getMany();
 
         return feedbacks;
     }

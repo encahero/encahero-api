@@ -12,10 +12,14 @@ async function bootstrap() {
     //   cert: fs.readFileSync(path.join(__dirname, '..', 'secrets', 'public-certificate.pem')),
     // }
     const app = await NestFactory.create(AppModule);
-    app.use(helmet());
+    app.use(
+        helmet({
+            crossOriginResourcePolicy: false,
+        }),
+    );
     app.enableCors({
         origin: '*',
-        // credentials: true,
+        credentials: true,
     });
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(GlobalValidationPipe);

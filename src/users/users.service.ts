@@ -36,10 +36,24 @@ export class UsersService {
         return this.userRepo.findOne({ where: { id } });
     }
 
-    findAll() {
-        return {
-            data: 'Hello',
-        };
+    async findAll() {
+        const data = await this.userRepo.find({
+            select: [
+                'id',
+                'email',
+                'username',
+                'avatar',
+                'firstName',
+                'lastName',
+                'created_at',
+                'updated_at',
+                'time_zone',
+            ],
+            order: {
+                created_at: 'DESC', // hoặc 'ASC' nếu muốn từ cũ tới mới
+            },
+        });
+        return data;
     }
 
     findOne(id: number) {

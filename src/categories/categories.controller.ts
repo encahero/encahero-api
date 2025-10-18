@@ -1,7 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpStatus, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
 import { OptionalAuthGuard } from 'src/common/guard/option-auth.guard';
@@ -12,8 +10,10 @@ export class CategoriesController {
     constructor(private readonly categoriesService: CategoriesService) {}
 
     @Post()
-    create(@Body() createCategoryDto: CreateCategoryDto) {
-        return this.categoriesService.create(createCategoryDto);
+    async create(@Body('name') categoryName: string) {
+        const data = await this.categoriesService.create(categoryName);
+
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.CREATE, data);
     }
 
     @Get()
@@ -34,12 +34,14 @@ export class CategoriesController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
-        return this.categoriesService.update(+id, updateCategoryDto);
+    async update(@Param('id') id: string, @Body('name') categoryName: string) {
+        const data = await this.categoriesService.update(+id, categoryName);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.UPDATE, data);
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.categoriesService.remove(+id);
+    async remove(@Param('id') id: string) {
+        const data = await this.categoriesService.remove(+id);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.REMOVE, data);
     }
 }

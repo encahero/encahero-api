@@ -4,13 +4,14 @@ import { Request, Response } from 'express';
 import { errorResponse } from '../response';
 
 const VALIDATION_ERROR = 'VALIDATION_ERROR';
+
 @Catch()
 export class CustomExceptionsFilter implements ExceptionFilter {
     catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();
         const request = ctx.getRequest<Request>();
-
+        console.log({ exception });
         let status: number;
         let message: string = 'Internal Server Error';
         let customStatus: string | undefined = undefined;

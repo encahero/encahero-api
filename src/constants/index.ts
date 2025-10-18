@@ -9,7 +9,6 @@ export const ERROR_MESSAGES = {
         RESET_TOKEN_INVALID: 'Reset token invalid',
         INVALID_PASSWORD: 'Wrong password',
     },
-
     USER: {
         NOT_FOUND: 'User not found',
         ALREADY_EXISTS: 'User already exists',
@@ -24,11 +23,17 @@ export const ERROR_MESSAGES = {
     },
 
     COLLECTION: {
+        EXISTED: 'Collection name existed',
         NOT_FOUND: 'Collection not found',
         COLLECTION_PROGRESS_NOT_FOUND: 'Collection progress not found',
         ALREADY_REGISTERED: 'You are already registered this collection',
         NOT_REGISTERED_OR_NOT_IN_PROGRESS: 'Collection not in progress or your are not registered',
         CANNOT_CHANGE_TO_COMPLETE_STATUS: 'You can not change collection status to complete ! ',
+    },
+    CATEGORY: {
+        EXISTED: 'Category name existed',
+        NOT_FOUND: 'Categiry not found',
+        HAVE_COLLECTION_WHEN_DELETE: 'Cannot delete category because it has collections',
     },
 
     CARD: {
@@ -53,6 +58,7 @@ export const SUCCESS_MESSAGES = {
         PROFILE_UPDATED: 'Profile updated successfully',
         UPDATE_TIMEZONE: 'Update timezone succesfully',
         UPDATE_PROFILE: 'Update profile succesfully',
+        FIND_ALL: 'Find all succesfully',
     },
     MAIL: {
         SEND_LOGIN_MAGIC_LINK: 'Send login magic link successfully',
@@ -67,6 +73,9 @@ export const SUCCESS_MESSAGES = {
     },
 
     COLLECTION: {
+        CREATE: 'Create collection successfully',
+        REMOVE: 'Remove collection successfully',
+        UPDATE: 'Update collection successfully',
         FIND_ALL: 'Find all collection successfully',
         FIND_ONE: 'Find collection successfully',
         REGISTER: 'Register collection successfully',
@@ -79,6 +88,9 @@ export const SUCCESS_MESSAGES = {
 
     CATEGORY: {
         FIND_ALL: 'Find all category successfully',
+        CREATE: 'Create category successfully',
+        REMOVE: 'Remove category successfully',
+        UPDATE: 'Update category successfully',
         FIND_COLLECTION_OF_CATEGORY: 'Find all collection of category successfully',
     },
 

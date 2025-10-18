@@ -8,10 +8,19 @@ import { UserCollectionProgress } from 'src/progress/entities/user-collection-pr
 import { UserCardProgress } from 'src/progress/entities/user-card-progress.entity';
 import { Card } from 'src/cards/entities/card.entity';
 import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
+import { Category } from 'src/categories/entities/category.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Collection, UserCollectionProgress, UserCardProgress, User, Card, UserDailyProgress]),
+        TypeOrmModule.forFeature([
+            Collection,
+            UserCollectionProgress,
+            UserCardProgress,
+            Category,
+            User,
+            Card,
+            UserDailyProgress,
+        ]),
     ],
     controllers: [CollectionsController],
     providers: [CollectionsService],

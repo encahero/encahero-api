@@ -15,8 +15,21 @@ export class CollectionsController {
     constructor(private readonly collectionsService: CollectionsService) {}
 
     @Post()
-    create(@Body() createCollectionDto: CreateCollectionDto) {
-        return this.collectionsService.create(createCollectionDto);
+    async create(@Body() createCollectionDto: CreateCollectionDto) {
+        const data = await this.collectionsService.create(createCollectionDto);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.CREATE, data);
+    }
+
+    @Patch(':id')
+    async update(@Param('id', ParseIntPipe) id: number, @Body() updateCollectionDto: UpdateCollectionDto) {
+        const data = await this.collectionsService.update(+id, updateCollectionDto);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.UPDATE, data);
+    }
+
+    @Delete(':id')
+    async remove(@Param('id', ParseIntPipe) id: number) {
+        const data = await this.collectionsService.remove(+id);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.REMOVE, data);
     }
 
     @UseGuards(OptionalAuthGuard)
@@ -52,16 +65,6 @@ export class CollectionsController {
     async findOne(@Param('id', ParseIntPipe) id: number, @User('id') userId: number) {
         const data = await this.collectionsService.findOne(id, userId);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.FIND_ONE, data);
-    }
-
-    @Patch(':id')
-    update(@Param('id', ParseIntPipe) id: number, @Body() updateCollectionDto: UpdateCollectionDto) {
-        return this.collectionsService.update(+id, updateCollectionDto);
-    }
-
-    @Delete(':id')
-    remove(@Param('id', ParseIntPipe) id: number) {
-        return this.collectionsService.remove(+id);
     }
 
     @UseGuards(AuthGuard)

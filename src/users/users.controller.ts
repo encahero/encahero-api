@@ -38,9 +38,9 @@ export class UsersController {
     }
 
     @Get()
-    @UseGuards(AuthGuard)
-    findAll() {
-        return this.usersService.findAll();
+    async findAll() {
+        const data = await this.usersService.findAll();
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.FIND_ALL, data);
     }
 
     @Get(':id')

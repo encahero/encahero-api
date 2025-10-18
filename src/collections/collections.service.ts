@@ -1,4 +1,10 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { UpdateCollectionDto } from './dto/update-collection.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +16,7 @@ import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-pr
 import { Card } from 'src/cards/entities/card.entity';
 import dayjs from 'src/config/dayjs.config';
 import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
+import { Category } from 'src/categories/entities/category.entity';
 
 interface RawCollection {
     mastered_card_count: number;
@@ -19,6 +26,7 @@ interface RawCollection {
 export class CollectionsService {
     constructor(
         @InjectRepository(Collection) private readonly collectionRepo: Repository<Collection>,
+        @InjectRepository(Category) private readonly categoryRepo: Repository<Category>,
         @InjectRepository(UserCardProgress) private readonly userCardProgressRepo: Repository<UserCardProgress>,
         @InjectRepository(Card) private readonly cardRepo: Repository<Card>,
         @InjectRepository(UserCollectionProgress)
@@ -27,13 +35,33 @@ export class CollectionsService {
         private readonly userDailyProgressRepo: Repository<UserDailyProgress>,
     ) {}
 
-    create(createCollectionDto: CreateCollectionDto) {
-        return 'This action adds a new collection';
+    async create(createCollectionDto: CreateCollectionDto) {
+        const { name, categoryName } = createCollectionDto;
+        const existing = await this.collectionRepo.findOne({ where: { name } });
+        if (existing) {
+            throw new BadRequestException(ERROR_MESSAGES.COLLECTION.EXISTED);
+        }
+
+        const category = await this.categoryRepo.findOne({ where: { name: categoryName } });
+        if (!category) {
+            throw new NotFoundException(ERROR_MESSAGES.CATEGORY.NOT_FOUND);
+        }
+
+        const collection = this.collectionRepo.create({
+            name,
+            category,
+            register_count: 0, // mặc định 0
+        });
+
+        const newCol = await this.collectionRepo.save(collection);
+        return newCol;
     }
 
     async findAll(userId?: number) {
         const qb = this.collectionRepo
             .createQueryBuilder('collection')
+            .leftJoinAndSelect('collection.category', 'category')
+            .addSelect(['category.id', 'category.name'])
             .loadRelationCountAndMap('collection.card_count', 'collection.cards');
 
         if (userId) {
@@ -187,12 +215,53 @@ export class CollectionsService {
         };
     }
 
-    update(id: number, updateCollectionDto: UpdateCollectionDto) {
-        return `This action updates a #${id} collection`;
+    async update(id: number, updateCollectionDto: UpdateCollectionDto) {
+        const { name, categoryName } = updateCollectionDto;
+
+        const collection = await this.collectionRepo.findOne({ where: { id } });
+        if (!collection) {
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
+        }
+
+        if (name && name !== collection.name) {
+            const existing = await this.collectionRepo.findOne({ where: { name } });
+            if (existing && existing.id !== id) {
+                throw new BadRequestException(ERROR_MESSAGES.COLLECTION.EXISTED);
+            }
+            collection.name = name;
+        }
+
+        if (categoryName && categoryName !== collection.category.name) {
+            const category = await this.categoryRepo.findOne({ where: { name: categoryName } });
+            if (!category) {
+                throw new NotFoundException(ERROR_MESSAGES.CATEGORY.NOT_FOUND);
+            }
+            collection.category = category;
+        }
+
+        await this.collectionRepo.save(collection);
+        return true;
     }
 
-    remove(id: number) {
-        return `This action removes a #${id} collection`;
+    async remove(id: number) {
+        const collection = await this.collectionRepo.findOne({
+            where: { id },
+            relations: ['cards', 'userProgress'],
+        });
+
+        if (!collection) {
+            throw new NotFoundException(`Collection with ID ${id} not found`);
+        }
+
+        if ((collection.cards?.length || 0) > 0 || (collection.userProgress?.length || 0) > 0) {
+            throw new BadRequestException(
+                `Cannot delete collection because it has ${collection.cards.length} cards or ${collection.userProgress.length} user progress entries`,
+            );
+        }
+
+        await this.collectionRepo.remove(collection);
+
+        return true;
     }
 
     async registerCollection(id: number, taskNum: number, userId: number) {

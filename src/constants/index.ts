@@ -38,6 +38,7 @@ export const ERROR_MESSAGES = {
 
     CARD: {
         NOT_FOUND: 'Card not found',
+        EXISTED: 'Card already existed',
         CARD_PROGRESS_NOT_FOUND: 'Card progress not found',
     },
     QUIZ: {
@@ -59,6 +60,7 @@ export const SUCCESS_MESSAGES = {
         UPDATE_TIMEZONE: 'Update timezone succesfully',
         UPDATE_PROFILE: 'Update profile succesfully',
         FIND_ALL: 'Find all succesfully',
+        FIND_USER_GROWTH: 'Find user growth succesfully',
     },
     MAIL: {
         SEND_LOGIN_MAGIC_LINK: 'Send login magic link successfully',
@@ -67,6 +69,9 @@ export const SUCCESS_MESSAGES = {
     },
 
     CARD: {
+        CREATE: 'Create card successfully',
+        REMOVE: 'Remove card successfully',
+        UPDATE: 'Update card successfully',
         FIND_ALL: 'Find all card successfully',
         CHANGE_STATUS: 'Change card status successfully',
         FIND_ALL_CARD_OF_COLLECTION: 'Find all card of collection successfully',

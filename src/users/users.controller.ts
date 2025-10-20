@@ -5,7 +5,6 @@ import {
     Body,
     Patch,
     Param,
-    Delete,
     UseGuards,
     HttpStatus,
     UseInterceptors,
@@ -43,6 +42,13 @@ export class UsersController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.FIND_ALL, data);
     }
 
+    // TODO:  only andmin
+    @Get('growth')
+    async findUserGrowth() {
+        const data = await this.usersService.findUserGrowth();
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.UPDATE_PROFILE, data);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.usersService.findOne(+id);
@@ -69,10 +75,5 @@ export class UsersController {
     ) {
         const data = await this.usersService.update(+id, userId, file, updateUserDto);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.UPDATE_PROFILE, data);
-    }
-
-    @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.usersService.remove(+id);
     }
 }

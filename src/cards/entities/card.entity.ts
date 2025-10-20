@@ -59,7 +59,7 @@ export class Card {
     @Column('simple-json', { nullable: true })
     ex: string[];
 
-    @Column()
+    @Column({ nullable: true })
     image_url: string;
 
     @Column({ type: 'enum', enum: CardType, default: CardType.OTHER })

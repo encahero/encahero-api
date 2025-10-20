@@ -9,6 +9,11 @@ import { ERROR_MESSAGES } from 'src/constants';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from './dto/user-response.dto';
 
+type UserGrowth = {
+    date: string; // hoặc Date nếu bạn muốn convert
+    count: number;
+};
+
 @Injectable()
 export class UsersService {
     constructor(@InjectRepository(User) private readonly userRepo: Repository<User>) {}
@@ -89,6 +94,19 @@ export class UsersService {
 
     remove(id: number) {
         return `This action removes a #${id} user`;
+    }
+
+    async findUserGrowth() {
+        const data = await this.userRepo
+            .createQueryBuilder('user')
+            .select('DATE(user.created_at)', 'date')
+            .addSelect('COUNT(*)', 'count')
+            .groupBy('date')
+            .orderBy('date', 'ASC')
+            .getRawMany<UserGrowth>();
+        const totalUsers = await this.userRepo.count();
+
+        return { data, totalUsers: totalUsers };
     }
 
     async save(user: User) {

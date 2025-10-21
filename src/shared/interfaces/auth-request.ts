@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { Role } from '../enums';
 
 export default interface AuthenticatedRequest extends Request {
     user?: {
@@ -6,5 +7,6 @@ export default interface AuthenticatedRequest extends Request {
         email?: string;
         deviceId: string;
         time_zone?: string;
+        role: Role;
     };
 }

@@ -39,7 +39,7 @@ export class OptionalAuthGuard implements CanActivate {
                 return true;
             }
 
-            request.user = { userId: Number(userId), email: user.email, deviceId };
+            request.user = { userId: Number(userId), email: user.email, deviceId, role: user.role };
         } catch {
             // Token sai/expired → user = undefined
             request.user = undefined;

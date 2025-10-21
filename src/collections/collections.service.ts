@@ -61,7 +61,6 @@ export class CollectionsService {
         const qb = this.collectionRepo
             .createQueryBuilder('collection')
             .leftJoinAndSelect('collection.category', 'category')
-            .addSelect(['category.id', 'category.name'])
             .loadRelationCountAndMap('collection.card_count', 'collection.cards');
 
         if (userId) {
@@ -71,7 +70,7 @@ export class CollectionsService {
                 .addSelect('COUNT(uc.id) > 0', 'is_registered')
                 .addSelect("MAX(CASE WHEN uc.status = 'stopped' THEN 1 ELSE 0 END) = 1", 'is_stopped')
                 .addSelect("MAX(CASE WHEN uc.status = 'completed' THEN 1 ELSE 0 END) = 1", 'is_completed')
-                .groupBy('collection.id');
+                .groupBy('collection.id, category.id, category.name');
         }
 
         const collections = await qb.getRawAndEntities<{

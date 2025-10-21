@@ -8,6 +8,9 @@ import { User } from 'src/common/decarators/user.decorator';
 
 import { CustomImagesInterceptor } from 'src/common/interceptors/custom-images.interceptor';
 import { FOLDER_FEEDBACKS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
+import { Role } from 'src/shared/enums';
+import { Roles } from 'src/common/decarators/role.decorator';
+import { RolesGuard } from 'src/common/guard/roles.guard';
 
 @Controller('feedback')
 export class FeedbackController {
@@ -31,9 +34,11 @@ export class FeedbackController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.FEEDBACK.CREATE, data);
     }
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Get()
     async findAll() {
         const data = await this.feedbackService.findAll();
-        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.FEEDBACK.CREATE, data);
+        return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.FEEDBACK.FIND_ALL, data);
     }
 }

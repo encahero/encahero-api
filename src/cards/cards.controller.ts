@@ -9,6 +9,7 @@ import {
     HttpStatus,
     UseInterceptors,
     UploadedFile,
+    UseGuards,
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
@@ -18,11 +19,17 @@ import { SUCCESS_MESSAGES } from 'src/constants';
 
 import CustomImageInterceptor from 'src/common/interceptors/custom-image.interceptor';
 import { FOLDER_CARD_THUMBNAILS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
+import { Roles } from 'src/common/decarators/role.decorator';
+import { Role } from 'src/shared/enums';
+import { AuthGuard } from 'src/common/guard/auth.guard';
+import { RolesGuard } from 'src/common/guard/roles.guard';
 
 @Controller('cards')
 export class CardsController {
     constructor(private readonly cardsService: CardsService) {}
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Post()
     @UseInterceptors(
         CustomImageInterceptor({ fieldName: 'image_file', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}` }),
@@ -32,6 +39,8 @@ export class CardsController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CARD.CREATE, data);
     }
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Patch(':id')
     @UseInterceptors(
         CustomImageInterceptor({ fieldName: 'image_file', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}` }),
@@ -45,6 +54,8 @@ export class CardsController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CARD.UPDATE, data);
     }
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Delete(':id')
     async remove(@Param('id') id: string) {
         const data = await this.cardsService.remove(+id);

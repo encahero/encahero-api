@@ -6,9 +6,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Card } from './entities/card.entity';
 import { CollectionsModule } from 'src/collections/collections.module';
 import { Collection } from 'src/collections/entities/collection.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Card, Collection]), forwardRef(() => CollectionsModule)],
+    imports: [TypeOrmModule.forFeature([Card, Collection, User]), forwardRef(() => CollectionsModule)],
     controllers: [CardsController],
     providers: [CardsService],
 })

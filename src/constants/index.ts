@@ -8,6 +8,7 @@ export const ERROR_MESSAGES = {
         REFRESH_TOKEN_EXPIRED: 'Refresh token expired',
         RESET_TOKEN_INVALID: 'Reset token invalid',
         INVALID_PASSWORD: 'Wrong password',
+        NO_PERMISSION: "'You do not have permission to access this resource'",
     },
     USER: {
         NOT_FOUND: 'User not found',
@@ -112,6 +113,7 @@ export const SUCCESS_MESSAGES = {
 
     FEEDBACK: {
         CREATE: 'Create feedback successfully',
+        FIND_ALL: 'Find all feedbacks successfully',
     },
 };
 

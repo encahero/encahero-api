@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Feedback } from 'src/feedback/entities/feedback.entity';
+import { Role } from 'src/shared/enums';
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn()
@@ -28,6 +29,13 @@ export class User {
 
     @Column({ nullable: true })
     lastName: string;
+
+    @Column({
+        type: 'enum',
+        enum: Role,
+        default: Role.USER,
+    })
+    role: Role;
 
     @Column({ nullable: true })
     password: string;

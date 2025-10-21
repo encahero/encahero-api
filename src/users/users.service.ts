@@ -54,6 +54,7 @@ export class UsersService {
                 'created_at',
                 'updated_at',
                 'time_zone',
+                'role',
             ],
             order: {
                 created_at: 'DESC', // hoặc 'ASC' nếu muốn từ cũ tới mới

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, HttpStatus, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { EPRequestdto } from './dto/ep-request.dto';
 import { successResponse } from 'src/common/response';

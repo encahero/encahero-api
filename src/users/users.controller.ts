@@ -20,6 +20,9 @@ import { SUCCESS_MESSAGES } from 'src/constants';
 
 import { FOLDER_AVATAR, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
 import CustomImageInterceptor from 'src/common/interceptors/custom-image.interceptor';
+import { RolesGuard } from 'src/common/guard/roles.guard';
+import { Roles } from 'src/common/decarators/role.decorator';
+import { Role } from 'src/shared/enums';
 
 @Controller('users')
 export class UsersController {
@@ -37,13 +40,16 @@ export class UsersController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.UPDATE_TIMEZONE, data);
     }
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Get()
     async findAll() {
         const data = await this.usersService.findAll();
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.FIND_ALL, data);
     }
 
-    // TODO:  only andmin
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Get('growth')
     async findUserGrowth() {
         const data = await this.usersService.findUserGrowth();

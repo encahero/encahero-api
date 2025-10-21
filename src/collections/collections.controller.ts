@@ -9,23 +9,32 @@ import { User } from 'src/common/decarators/user.decorator';
 import { CollectionStatus } from 'src/progress/entities/user-collection-progress.entity';
 import { CardStatus } from 'src/progress/entities/user-card-progress.entity';
 import { OptionalAuthGuard } from 'src/common/guard/option-auth.guard';
+import { Role } from 'src/shared/enums';
+import { Roles } from 'src/common/decarators/role.decorator';
+import { RolesGuard } from 'src/common/guard/roles.guard';
 
 @Controller('collections')
 export class CollectionsController {
     constructor(private readonly collectionsService: CollectionsService) {}
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Post()
     async create(@Body() createCollectionDto: CreateCollectionDto) {
         const data = await this.collectionsService.create(createCollectionDto);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.CREATE, data);
     }
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Patch(':id')
     async update(@Param('id', ParseIntPipe) id: number, @Body() updateCollectionDto: UpdateCollectionDto) {
         const data = await this.collectionsService.update(+id, updateCollectionDto);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.UPDATE, data);
     }
 
+    @UseGuards(AuthGuard, RolesGuard)
+    @Roles(Role.ADMIN)
     @Delete(':id')
     async remove(@Param('id', ParseIntPipe) id: number) {
         const data = await this.collectionsService.remove(+id);

@@ -39,6 +39,7 @@ export const ERROR_MESSAGES = {
     CARD: {
         NOT_FOUND: 'Card not found',
         EXISTED: 'Card already existed',
+        FETCH_AND_SAVE_IMAGE_ERROR: 'Can not fetch and save img url',
         CARD_PROGRESS_NOT_FOUND: 'Card progress not found',
     },
     QUIZ: {

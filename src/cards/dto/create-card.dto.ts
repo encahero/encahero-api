@@ -34,7 +34,7 @@ export class CreateCardDto {
 
     @IsString()
     @IsOptional()
-    image_url: string;
+    image_url?: string;
 
     @IsEnum(CardType)
     type: CardType;

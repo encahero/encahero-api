@@ -15,8 +15,9 @@ import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+
+import CustomImageInterceptor from 'src/common/interceptors/custom-image.interceptor';
+import { FOLDER_CARD_THUMBNAILS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
 
 @Controller('cards')
 export class CardsController {
@@ -24,15 +25,7 @@ export class CardsController {
 
     @Post()
     @UseInterceptors(
-        FileInterceptor('image_file', {
-            storage: diskStorage({
-                destination: './uploads/card_thumbnails',
-                filename: (req, file, cb) => {
-                    const unique = Date.now() + '-' + Math.random().toString(36).slice(2);
-                    cb(null, `${unique}-${file.originalname}`);
-                },
-            }),
-        }),
+        CustomImageInterceptor({ fieldName: 'image_file', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}` }),
     )
     async create(@UploadedFile() file: Express.Multer.File, @Body() createCardDto: CreateCardDto) {
         const data = await this.cardsService.create(file, createCardDto);
@@ -41,15 +34,7 @@ export class CardsController {
 
     @Patch(':id')
     @UseInterceptors(
-        FileInterceptor('image_file', {
-            storage: diskStorage({
-                destination: './uploads/card_thumbnails',
-                filename: (req, file, cb) => {
-                    const unique = Date.now() + '-' + Math.random().toString(36).slice(2);
-                    cb(null, `${unique}-${file.originalname}`);
-                },
-            }),
-        }),
+        CustomImageInterceptor({ fieldName: 'image_file', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}` }),
     )
     async update(
         @UploadedFile() file: Express.Multer.File,

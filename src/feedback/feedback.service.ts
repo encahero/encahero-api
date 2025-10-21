@@ -2,13 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Feedback } from './entities/feedback.entity';
 import { Repository } from 'typeorm';
+import { FOLDER_FEEDBACKS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
 
 @Injectable()
 export class FeedbackService {
     constructor(@InjectRepository(Feedback) private readonly feedbackRepo: Repository<Feedback>) {}
 
     async create(userId: number, text: string, images: Express.Multer.File[]) {
-        const imagePaths = images?.map((file) => file.filename) || [];
+        const imagePaths = images?.map((file) => `/${FOLDER_UPLOAD}/${FOLDER_FEEDBACKS}/${file.filename}`) || [];
 
         const feedback = this.feedbackRepo.create({
             user_id: userId,

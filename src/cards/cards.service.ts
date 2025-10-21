@@ -6,7 +6,9 @@ import { Card } from './entities/card.entity';
 import { Not, Repository } from 'typeorm';
 import { Collection } from 'src/collections/entities/collection.entity';
 import { ERROR_MESSAGES } from 'src/constants';
-
+import { writeFile } from 'fs/promises';
+import { extname, join } from 'path';
+import { FOLDER_CARD_THUMBNAILS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
 @Injectable()
 export class CardsService {
     constructor(
@@ -39,9 +41,19 @@ export class CardsService {
             throw new BadRequestException(ERROR_MESSAGES.CARD.EXISTED);
         }
 
+        let finalFileName: string | null = null;
         if (file) {
-            rest['image_url'] = `/uploads/avatars/${file.filename}`;
+            finalFileName = file.filename;
+        } else if (createCardDto.image_url) {
+            const imgName = await this.fetchAndSaveImage(createCardDto.image_url);
+            if (imgName) {
+                finalFileName = imgName;
+            } else {
+                throw new BadRequestException(ERROR_MESSAGES.CARD.FETCH_AND_SAVE_IMAGE_ERROR);
+            }
         }
+
+        rest['image_url'] = `/${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}/${finalFileName}`;
 
         const card = this.cardRepo.create({
             ...rest,
@@ -102,8 +114,24 @@ export class CardsService {
             throw new BadRequestException(ERROR_MESSAGES.CARD.EXISTED);
         }
 
+        let finalFileName: string | undefined;
+
         if (file) {
-            updateCardDto['image_url'] = `/uploads/avatars/${file.filename}`;
+            finalFileName = file.filename;
+        } else if (updateCardDto.image_url) {
+            if (updateCardDto.image_url !== card.image_url) {
+                const imgName = await this.fetchAndSaveImage(updateCardDto.image_url);
+                if (!imgName) {
+                    throw new BadRequestException(ERROR_MESSAGES.CARD.FETCH_AND_SAVE_IMAGE_ERROR);
+                }
+                finalFileName = imgName;
+            } else {
+                finalFileName = card.image_url?.replace(`/${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}/`, '');
+            }
+        }
+
+        if (finalFileName) {
+            updateCardDto.image_url = `/${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}/${finalFileName}`;
         }
 
         Object.assign(card, {
@@ -124,5 +152,25 @@ export class CardsService {
         await this.cardRepo.remove(card);
 
         return true;
+    }
+
+    private async fetchAndSaveImage(url: string) {
+        try {
+            // Tạo thư mục nếu chưa tồn tại
+            const uploadPath = './uploads/card_thumbnails';
+            const res = await fetch(url);
+            if (!res.ok) throw new BadRequestException('Cannot fetch image');
+
+            const arrayBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+
+            const ext = extname(new URL(url).pathname) || '.jpg';
+            const finalFileName = Date.now() + '-' + Math.random().toString(36).slice(2) + ext;
+
+            await writeFile(join(uploadPath, finalFileName), buffer);
+            return finalFileName;
+        } catch {
+            return null;
+        }
     }
 }

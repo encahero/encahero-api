@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { ERROR_MESSAGES } from 'src/constants';
 import { plainToInstance } from 'class-transformer';
 import { UserResponseDto } from './dto/user-response.dto';
+import { FOLDER_AVATAR, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
 
 type UserGrowth = {
     date: string; // hoặc Date nếu bạn muốn convert
@@ -81,7 +82,7 @@ export class UsersService {
         );
 
         if (file) {
-            filteredDto['avatar'] = `/uploads/avatars/${file.filename}`;
+            filteredDto['avatar'] = `/${FOLDER_UPLOAD}/${FOLDER_AVATAR}/${file.filename}`;
         }
 
         Object.assign(user, filteredDto);

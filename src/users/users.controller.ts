@@ -17,8 +17,9 @@ import { AuthGuard } from 'src/common/guard/auth.guard';
 import { User } from 'src/common/decarators/user.decorator';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+
+import { FOLDER_AVATAR, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
+import CustomImageInterceptor from 'src/common/interceptors/custom-image.interceptor';
 
 @Controller('users')
 export class UsersController {
@@ -56,17 +57,7 @@ export class UsersController {
 
     @UseGuards(AuthGuard)
     @Patch(':id')
-    @UseInterceptors(
-        FileInterceptor('avatar', {
-            storage: diskStorage({
-                destination: './uploads/avatars',
-                filename: (req, file, cb) => {
-                    const unique = Date.now() + '-' + Math.random().toString(36).slice(2);
-                    cb(null, unique + '-' + file.originalname);
-                },
-            }),
-        }),
-    )
+    @UseInterceptors(CustomImageInterceptor({ fieldName: 'avatar', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_AVATAR}` }))
     async update(
         @Param('id') id: string,
         @User('id') userId: number,

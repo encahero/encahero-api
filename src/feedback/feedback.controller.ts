@@ -2,10 +2,13 @@ import { Controller, Post, Body, HttpStatus, UseInterceptors, UploadedFiles, Use
 import { FeedbackService } from './feedback.service';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+
 import { AuthGuard } from 'src/common/guard/auth.guard';
 import { User } from 'src/common/decarators/user.decorator';
+
+import { CustomImagesInterceptor } from 'src/common/interceptors/custom-images.interceptor';
+import { FOLDER_FEEDBACKS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
+
 @Controller('feedback')
 export class FeedbackController {
     constructor(private readonly feedbackService: FeedbackService) {}
@@ -13,14 +16,10 @@ export class FeedbackController {
     @UseGuards(AuthGuard)
     @Post()
     @UseInterceptors(
-        FilesInterceptor('images', 5, {
-            storage: diskStorage({
-                destination: './uploads/feedback',
-                filename: (req, file, cb) => {
-                    const unique = Date.now() + '-' + Math.random().toString(36).slice(2);
-                    cb(null, unique + '-' + file.originalname);
-                },
-            }),
+        CustomImagesInterceptor({
+            fieldName: 'images',
+            maxCount: 5,
+            uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_FEEDBACKS}`,
         }),
     )
     async create(

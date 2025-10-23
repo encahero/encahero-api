@@ -85,9 +85,9 @@ export class CategoriesService {
         if (category.collections.length > 0) {
             throw new BadRequestException(ERROR_MESSAGES.CATEGORY.HAVE_COLLECTION_WHEN_DELETE);
         }
-
+        const removedCategory = { ...category };
         await this.categoryRepo.remove(category);
 
-        return true;
+        return removedCategory;
     }
 }

@@ -9,6 +9,8 @@ import {
     HttpStatus,
     UseInterceptors,
     UploadedFile,
+    Query,
+    ParseIntPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -43,8 +45,12 @@ export class UsersController {
     @UseGuards(AuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @Get()
-    async findAll() {
-        const data = await this.usersService.findAll();
+    async findAll(
+        @Query('searchValue') searchValue?: string,
+        @Query('page', ParseIntPipe) page: number = 1,
+        @Query('limit', ParseIntPipe) limit: number = 20,
+    ) {
+        const data = await this.usersService.findAll(searchValue, page, limit);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.USER.FIND_ALL, data);
     }
 

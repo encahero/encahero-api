@@ -53,7 +53,9 @@ export class CardsService {
             }
         }
 
-        rest['image_url'] = `/${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}/${finalFileName}`;
+        if (finalFileName) {
+            rest.image_url = `/${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}/${finalFileName}`;
+        }
 
         const card = this.cardRepo.create({
             ...rest,
@@ -72,7 +74,6 @@ export class CardsService {
         page: number,
         limit: number,
     ) {
-        console.log({ searchValue, collectionName, type, page, limit });
         const query = this.cardRepo.createQueryBuilder('card').leftJoinAndSelect('card.collection', 'collection');
 
         // Filter search
@@ -97,7 +98,7 @@ export class CardsService {
         query.skip(skip).take(limit);
 
         // Sort theo id ASC
-        query.orderBy('card.id', 'ASC');
+        query.orderBy('card.id', 'DESC');
 
         // Lấy dữ liệu và total count
         const [cards, total] = await query.getManyAndCount();
@@ -108,8 +109,6 @@ export class CardsService {
             collectionId: card.collection.id,
             collectionName: card.collection.name,
         }));
-
-        console.log({ mappedCards });
 
         return {
             data: mappedCards,
@@ -188,9 +187,11 @@ export class CardsService {
             throw new BadRequestException(ERROR_MESSAGES.CARD.NOT_FOUND);
         }
 
+        const removedCard = { ...card };
+
         await this.cardRepo.remove(card);
 
-        return true;
+        return removedCard;
     }
 
     private async fetchAndSaveImage(url: string) {

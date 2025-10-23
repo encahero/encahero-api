@@ -42,25 +42,49 @@ export class UsersService {
         return this.userRepo.findOne({ where: { id } });
     }
 
-    async findAll() {
-        const data = await this.userRepo.find({
-            select: [
-                'id',
-                'email',
-                'username',
-                'avatar',
-                'firstName',
-                'lastName',
-                'created_at',
-                'updated_at',
-                'time_zone',
-                'role',
-            ],
-            order: {
-                created_at: 'DESC', // hoặc 'ASC' nếu muốn từ cũ tới mới
-            },
-        });
-        return data;
+    async findAll(searchValue: string | undefined, page: number, limit: number) {
+        const query = this.userRepo
+            .createQueryBuilder('user')
+            .select([
+                'user.id',
+                'user.email',
+                'user.username',
+                'user.avatar',
+                'user.firstName',
+                'user.lastName',
+                'user.created_at',
+                'user.updated_at',
+                'user.time_zone',
+                'user.role',
+            ])
+            .orderBy('user.created_at', 'DESC');
+
+        // ✅ Filter theo searchValue
+        if (searchValue && searchValue.trim() !== '') {
+            const keyword = `%${searchValue.trim()}%`;
+            query.andWhere(
+                `(user.firstName ILIKE :keyword OR 
+        user.lastName ILIKE :keyword OR 
+        user.username ILIKE :keyword OR 
+        user.email ILIKE :keyword)`,
+                { keyword },
+            );
+        }
+
+        // ✅ Pagination
+        const offset = (page - 1) * limit;
+        query.skip(offset).take(limit);
+
+        // ✅ Lấy tổng để tính tổng số trang
+        const [data, total] = await query.getManyAndCount();
+
+        return {
+            data,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     findOne(id: number) {

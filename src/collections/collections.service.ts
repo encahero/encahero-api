@@ -258,9 +258,10 @@ export class CollectionsService {
             );
         }
 
+        const removedCollection = { ...collection };
         await this.collectionRepo.remove(collection);
 
-        return true;
+        return removedCollection;
     }
 
     async registerCollection(id: number, taskNum: number, userId: number) {

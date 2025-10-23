@@ -11,6 +11,7 @@ import {
     UploadedFile,
     UseGuards,
     Query,
+    ParseIntPipe,
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
@@ -69,8 +70,8 @@ export class CardsController {
         @Query('searchValue') searchValue?: string,
         @Query('collectionName') collectionName?: string,
         @Query('type') type?: CardType,
-        @Query('page') page: number = 1,
-        @Query('limit') limit: number = 20,
+        @Query('page', ParseIntPipe) page: number = 1,
+        @Query('limit', ParseIntPipe) limit: number = 20,
     ) {
         const data = await this.cardsService.findAll(searchValue, collectionName, type, page, limit);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CARD.FIND_ALL, data);

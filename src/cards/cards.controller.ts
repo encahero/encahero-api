@@ -10,6 +10,7 @@ import {
     UseInterceptors,
     UploadedFile,
     UseGuards,
+    Query,
 } from '@nestjs/common';
 import { CardsService } from './cards.service';
 import { CreateCardDto } from './dto/create-card.dto';
@@ -23,6 +24,7 @@ import { Roles } from 'src/common/decarators/role.decorator';
 import { Role } from 'src/shared/enums';
 import { AuthGuard } from 'src/common/guard/auth.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
+import { CardType } from './entities/card.entity';
 
 @Controller('cards')
 export class CardsController {
@@ -63,8 +65,14 @@ export class CardsController {
     }
 
     @Get()
-    async findAll() {
-        const data = await this.cardsService.findAll();
+    async findAll(
+        @Query('searchValue') searchValue?: string,
+        @Query('collectionName') collectionName?: string,
+        @Query('type') type?: CardType,
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 20,
+    ) {
+        const data = await this.cardsService.findAll(searchValue, collectionName, type, page, limit);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CARD.FIND_ALL, data);
     }
 

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Card } from './entities/card.entity';
+import { Card, CardType } from './entities/card.entity';
 import { Not, Repository } from 'typeorm';
 import { Collection } from 'src/collections/entities/collection.entity';
 import { ERROR_MESSAGES } from 'src/constants';
@@ -65,20 +65,59 @@ export class CardsService {
         return newCard;
     }
 
-    async findAll() {
-        const cards = await this.cardRepo.find({
-            relations: ['collection'], // load relation
-            order: {
-                id: 'ASC',
-            },
-        });
+    async findAll(
+        searchValue: string | null | undefined,
+        collectionName: string | null | undefined,
+        type: CardType | null | undefined,
+        page: number,
+        limit: number,
+    ) {
+        console.log({ searchValue, collectionName, type, page, limit });
+        const query = this.cardRepo.createQueryBuilder('card').leftJoinAndSelect('card.collection', 'collection');
 
-        // map ra collectionId và collectionName
-        return cards.map((card) => ({
+        // Filter search
+        if (searchValue) {
+            query.andWhere('(LOWER(card.en_word) LIKE :search OR LOWER(card.vn_word) LIKE :search)', {
+                search: `%${searchValue.toLowerCase()}%`,
+            });
+        }
+
+        // Filter collection
+        if (collectionName) {
+            query.andWhere('collection.name = :collectionName', { collectionName });
+        }
+
+        // Filter type
+        if (type) {
+            query.andWhere('card.type = :type', { type });
+        }
+
+        // Pagination
+        const skip = (page - 1) * limit;
+        query.skip(skip).take(limit);
+
+        // Sort theo id ASC
+        query.orderBy('card.id', 'ASC');
+
+        // Lấy dữ liệu và total count
+        const [cards, total] = await query.getManyAndCount();
+
+        // Map thêm collectionId và collectionName
+        const mappedCards = cards.map((card) => ({
             ...card,
             collectionId: card.collection.id,
             collectionName: card.collection.name,
         }));
+
+        console.log({ mappedCards });
+
+        return {
+            data: mappedCards,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     findOne(id: number) {

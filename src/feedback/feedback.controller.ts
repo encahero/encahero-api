@@ -6,11 +6,12 @@ import { SUCCESS_MESSAGES } from 'src/constants';
 import { AuthGuard } from 'src/common/guard/auth.guard';
 import { User } from 'src/common/decarators/user.decorator';
 
-import { CustomImagesInterceptor } from 'src/common/interceptors/custom-images.interceptor';
 import { FOLDER_FEEDBACKS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
 import { Role } from 'src/shared/enums';
 import { Roles } from 'src/common/decarators/role.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
+import { ImagesMemoryInterceptor } from 'src/common/interceptors/memory-images.interceptor';
+import { ImagesResizeInterceptor } from 'src/common/interceptors/resize-images.interceptor';
 
 @Controller('feedback')
 export class FeedbackController {
@@ -18,11 +19,20 @@ export class FeedbackController {
 
     @UseGuards(AuthGuard)
     @Post()
+    // @UseInterceptors(
+    //     CustomImagesInterceptor({
+    //         fieldName: 'images',
+    //         maxCount: 5,
+    //         uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_FEEDBACKS}`,
+    //     }),
+    //     )
     @UseInterceptors(
-        CustomImagesInterceptor({
-            fieldName: 'images',
-            maxCount: 5,
+        ImagesMemoryInterceptor({ fieldName: 'images' }),
+        new ImagesResizeInterceptor({
             uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_FEEDBACKS}`,
+            width: 500,
+            height: 500,
+            quality: 100,
         }),
     )
     async create(

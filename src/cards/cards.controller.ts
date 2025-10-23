@@ -19,13 +19,14 @@ import { UpdateCardDto } from './dto/update-card.dto';
 import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
 
-import CustomImageInterceptor from 'src/common/interceptors/custom-image.interceptor';
 import { FOLDER_CARD_THUMBNAILS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
 import { Roles } from 'src/common/decarators/role.decorator';
 import { Role } from 'src/shared/enums';
 import { AuthGuard } from 'src/common/guard/auth.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { CardType } from './entities/card.entity';
+import { ImageMemoryInterceptor } from 'src/common/interceptors/memory-image.interceptor';
+import { ImageResizeInterceptor } from 'src/common/interceptors/resize-image.interceptor';
 
 @Controller('cards')
 export class CardsController {
@@ -34,8 +35,16 @@ export class CardsController {
     @UseGuards(AuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @Post()
+    // @UseInterceptors(
+    //     CustomImageInterceptor({ fieldName: 'image_file', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}` }),
+    //     )
     @UseInterceptors(
-        CustomImageInterceptor({ fieldName: 'image_file', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}` }),
+        ImageMemoryInterceptor({ fieldName: 'image_file' }),
+        new ImageResizeInterceptor({
+            uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}`,
+            width: 300,
+            height: 300,
+        }),
     )
     async create(@UploadedFile() file: Express.Multer.File, @Body() createCardDto: CreateCardDto) {
         const data = await this.cardsService.create(file, createCardDto);
@@ -46,7 +55,12 @@ export class CardsController {
     @Roles(Role.ADMIN)
     @Patch(':id')
     @UseInterceptors(
-        CustomImageInterceptor({ fieldName: 'image_file', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}` }),
+        ImageMemoryInterceptor({ fieldName: 'image_file' }),
+        new ImageResizeInterceptor({
+            uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_CARD_THUMBNAILS}`,
+            width: 300,
+            height: 300,
+        }),
     )
     async update(
         @UploadedFile() file: Express.Multer.File,

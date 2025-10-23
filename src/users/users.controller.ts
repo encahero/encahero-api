@@ -21,10 +21,11 @@ import { successResponse } from 'src/common/response';
 import { SUCCESS_MESSAGES } from 'src/constants';
 
 import { FOLDER_AVATAR, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
-import CustomImageInterceptor from 'src/common/interceptors/custom-image.interceptor';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { Roles } from 'src/common/decarators/role.decorator';
 import { Role } from 'src/shared/enums';
+import { ImageMemoryInterceptor } from 'src/common/interceptors/memory-image.interceptor';
+import { ImageResizeInterceptor } from 'src/common/interceptors/resize-image.interceptor';
 
 @Controller('users')
 export class UsersController {
@@ -69,7 +70,11 @@ export class UsersController {
 
     @UseGuards(AuthGuard)
     @Patch(':id')
-    @UseInterceptors(CustomImageInterceptor({ fieldName: 'avatar', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_AVATAR}` }))
+    // @UseInterceptors(CustomImageInterceptor({ fieldName: 'avatar', uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_AVATAR}` }))
+    @UseInterceptors(
+        ImageMemoryInterceptor({ fieldName: 'avatar' }),
+        new ImageResizeInterceptor({ uploadPath: `./${FOLDER_UPLOAD}/${FOLDER_AVATAR}`, width: 300, height: 300 }),
+    )
     async update(
         @Param('id') id: string,
         @User('id') userId: number,

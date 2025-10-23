@@ -6,9 +6,10 @@ import { Card, CardType } from './entities/card.entity';
 import { Not, Repository } from 'typeorm';
 import { Collection } from 'src/collections/entities/collection.entity';
 import { ERROR_MESSAGES } from 'src/constants';
-import { writeFile } from 'fs/promises';
 import { extname, join } from 'path';
 import { FOLDER_CARD_THUMBNAILS, FOLDER_UPLOAD } from 'src/constants/upload-folder-name';
+import sharp from 'sharp';
+
 @Injectable()
 export class CardsService {
     constructor(
@@ -206,8 +207,14 @@ export class CardsService {
 
             const ext = extname(new URL(url).pathname) || '.jpg';
             const finalFileName = Date.now() + '-' + Math.random().toString(36).slice(2) + ext;
+            const filepath = join(uploadPath, finalFileName);
 
-            await writeFile(join(uploadPath, finalFileName), buffer);
+            await sharp(buffer)
+                .rotate() // fix Exif Orientation nếu có
+                .resize(300, 300, { fit: 'inside' })
+                .jpeg({ quality: 80 })
+                .toFile(filepath);
+
             return finalFileName;
         } catch {
             return null;

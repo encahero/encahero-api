@@ -2,9 +2,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 
-interface CustomFileInterceptorOptions {
+interface CustomImageInterceptorOptions {
     fieldName: string;
-    uploadPath: string;
+    uploadPath?: string;
     allowedTypes?: string[];
     maxSizeMB?: number;
 }
@@ -14,13 +14,14 @@ export default function CustomImageInterceptor({
     uploadPath,
     allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'],
     maxSizeMB = 5,
-}: CustomFileInterceptorOptions) {
+}: CustomImageInterceptorOptions) {
     return FileInterceptor(fieldName, {
         storage: diskStorage({
             destination: uploadPath,
             filename: (req, file, cb) => {
                 const ext = path.extname(file.originalname) || '.png';
                 const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
+
                 cb(null, uniqueName);
             },
         }),

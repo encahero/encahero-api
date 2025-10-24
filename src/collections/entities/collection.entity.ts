@@ -20,6 +20,9 @@ export class Collection {
     @Column({ unique: true })
     name: string;
 
+    @Column({ type: 'text', nullable: true, default: null })
+    icon: string | null;
+
     @ManyToOne(() => Category, (category) => category.collections, { eager: true })
     @JoinColumn({ name: 'category_id' })
     category: Category;

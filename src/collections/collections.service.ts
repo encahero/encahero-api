@@ -36,7 +36,7 @@ export class CollectionsService {
     ) {}
 
     async create(createCollectionDto: CreateCollectionDto) {
-        const { name, categoryName } = createCollectionDto;
+        const { name, categoryName, icon } = createCollectionDto;
         const existing = await this.collectionRepo.findOne({ where: { name } });
         if (existing) {
             throw new BadRequestException(ERROR_MESSAGES.COLLECTION.EXISTED);
@@ -50,6 +50,7 @@ export class CollectionsService {
         const collection = this.collectionRepo.create({
             name,
             category,
+            icon: icon || null,
             register_count: 0, // mặc định 0
         });
 
@@ -215,7 +216,7 @@ export class CollectionsService {
     }
 
     async update(id: number, updateCollectionDto: UpdateCollectionDto) {
-        const { name, categoryName } = updateCollectionDto;
+        const { name, categoryName, icon } = updateCollectionDto;
 
         const collection = await this.collectionRepo.findOne({ where: { id } });
         if (!collection) {
@@ -227,6 +228,7 @@ export class CollectionsService {
             if (existing && existing.id !== id) {
                 throw new BadRequestException(ERROR_MESSAGES.COLLECTION.EXISTED);
             }
+            console.log('Updated name to:', name, icon);
             collection.name = name;
         }
 
@@ -238,6 +240,7 @@ export class CollectionsService {
             collection.category = category;
         }
 
+        collection.icon = icon || null;
         await this.collectionRepo.save(collection);
         return true;
     }
@@ -305,7 +308,7 @@ export class CollectionsService {
             .createQueryBuilder('progress')
             .leftJoinAndSelect('progress.collection', 'collection')
             .loadRelationCountAndMap('collection.card_count', 'collection.cards')
-            .select(['progress', 'collection.id', 'collection.name'])
+            .select(['progress', 'collection.id', 'collection.name', 'collection.icon'])
             .addSelect(
                 (subQuery) =>
                     subQuery

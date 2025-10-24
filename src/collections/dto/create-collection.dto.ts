@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateCollectionDto {
     @IsString()
@@ -6,4 +6,8 @@ export class CreateCollectionDto {
 
     @IsString()
     categoryName: string;
+
+    @IsString()
+    @IsOptional()
+    icon?: string;
 }

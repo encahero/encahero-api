@@ -342,7 +342,6 @@ export class CollectionsService {
                 // Sang ngày mới theo timezone user
                 progress.today_learned_count = 0;
                 progress.today_new_count = 0;
-                progress.last_reviewed_at = now.utc().toDate();
                 resetList.push(progress);
             }
         }
@@ -442,9 +441,18 @@ export class CollectionsService {
         }
 
         if (status === CardStatus.MASTERED) {
-            const now = new Date();
+            const now = dayjs().tz(timeZone);
+            const last = collectionProgress.last_reviewed_at;
+
+            // reset in new day
+            if (!last || dayjs(last).tz(timeZone).format('YYYY-MM-DD') !== now.format('YYYY-MM-DD')) {
+                collectionProgress.today_learned_count = 0;
+                collectionProgress.today_new_count = 0;
+            }
+
+            // increase daily progress
             collectionProgress.today_learned_count++;
-            collectionProgress.last_reviewed_at = now;
+            collectionProgress.last_reviewed_at = now.utc().toDate();
 
             if (masteredCards >= totalCards) {
                 collectionProgress.status = CollectionStatus.COMPLETED;
@@ -483,7 +491,7 @@ export class CollectionsService {
             }
         }
 
-        return { ...userCardProgress, collectionCompleted };
+        return { ...userCardProgress, collectionCompleted, collection: collectionProgress };
     }
 
     async findCardsOfCollection(collectionId: number, userId?: number) {

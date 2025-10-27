@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserDailyProgress } from './entities/user-daily-progress.entity';
 import { Repository } from 'typeorm';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import dayjs from 'src/config/dayjs.config';
+import { UserCollectionProgress } from './entities/user-collection-progress.entity';
 interface WeekProgress {
     total: string | null;
 }
@@ -15,8 +16,12 @@ interface ContributionDto {
 
 @Injectable()
 export class ProgressService {
+    private readonly logger = new Logger(ProgressService.name);
+
     constructor(
         @InjectRepository(UserDailyProgress) private readonly userDailyProgressRepo: Repository<UserDailyProgress>,
+        @InjectRepository(UserDailyProgress)
+        private readonly userCollectionProgressRepo: Repository<UserCollectionProgress>,
     ) {}
 
     async getStasDailyAndWeekly(userId: number, timeZone: string) {

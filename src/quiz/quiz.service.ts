@@ -68,6 +68,7 @@ export class QuizService {
         query.orderBy('RANDOM()').limit(limit);
 
         const cards = await query.getMany();
+
         return cards;
     }
 
@@ -112,6 +113,16 @@ export class QuizService {
 
         // increase daily progress
         const now = dayjs().tz(timeZone);
+        const last = registered.last_reviewed_at;
+        if (!last || dayjs(last).tz(timeZone).format('YYYY-MM-DD') !== now.format('YYYY-MM-DD')) {
+            // Sang ngày mới theo timezone user
+            registered.today_learned_count = 0;
+            registered.today_new_count = 0;
+        }
+
+        registered.today_learned_count++;
+        registered.last_reviewed_at = now.utc().toDate();
+
         const startOfDayUTC = now.startOf('day').utc().toDate();
 
         let dailyProgress = await this.userDailyProgressRepo.findOne({
@@ -128,16 +139,11 @@ export class QuizService {
             dailyProgress.card_answered++;
         }
 
-        // tăng count hôm nay
-        registered.today_learned_count++;
-        registered.last_reviewed_at = now.utc().toDate();
-
-        if (answer?.isNew) {
-            registered.today_new_count++;
-        }
         await this.userCardProgressRepo.save(userCardProgress);
         await this.userDailyProgressRepo.save(dailyProgress);
         await this.userCollectionProgressRepo.save(registered);
-        return true;
+        return {
+            collection: registered,
+        };
     }
 }

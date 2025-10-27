@@ -7,7 +7,6 @@ import { CollectionsModule } from './collections/collections.module';
 import { CardsModule } from './cards/cards.module';
 import { BattleModule } from './battle/battle.module';
 import { AuthModule } from './auth/auth.module';
-
 import { DatabaseModule } from './database/database.module';
 import { CacheRedisModule } from './redis/redis.module';
 import { CustomConfigModule } from './config/custom-config.module';

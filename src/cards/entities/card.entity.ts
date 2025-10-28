@@ -40,6 +40,9 @@ export class Card {
     @Column()
     en_word: string;
 
+    @Column()
+    phonetic: string;
+
     @Column('simple-json', { nullable: true })
     @ArrayMinSize(4, { message: 'vn_choice phải có ít nhất 4 phần tử' })
     @ArrayMaxSize(4, { message: 'vn_choice chỉ được có tối đa 4 phần tử' })

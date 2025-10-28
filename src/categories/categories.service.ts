@@ -4,6 +4,7 @@ import { Category } from './entities/category.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Collection } from 'src/collections/entities/collection.entity';
 import { ERROR_MESSAGES } from 'src/constants';
+import { Role } from 'src/shared/enums';
 
 @Injectable()
 export class CategoriesService {
@@ -22,21 +23,32 @@ export class CategoriesService {
         return this.categoryRepo.save(category);
     }
 
-    async findAll() {
-        const categories = await this.categoryRepo
+    async findAll(role: Role) {
+        const qb = this.categoryRepo
             .createQueryBuilder('category')
-            .loadRelationCountAndMap('category.collection_count', 'category.collections')
-            .getMany();
+            .loadRelationCountAndMap('category.collection_count', 'category.collections');
+
+        // Nếu không phải admin thì chỉ lấy category công khai
+        if (role !== Role.ADMIN) {
+            qb.where('category.is_public = :isPublic', { isPublic: true });
+        }
+
+        const categories = await qb.getMany();
+        return categories;
 
         return categories;
     }
 
-    async getCollectionOfCategory(categoryId: number, userId?: number) {
+    async getCollectionOfCategory(categoryId: number, userId?: number, role?: Role) {
         const qb = this.collectionRepo
             .createQueryBuilder('collection')
             .leftJoinAndSelect('collection.category', 'category')
             .where('category.id = :categoryId', { categoryId })
             .loadRelationCountAndMap('collection.card_count', 'collection.cards');
+
+        if (role !== Role.ADMIN) {
+            qb.andWhere('category.is_public = true').andWhere('collection.is_public = true');
+        }
 
         if (userId) {
             qb.addSelect((subQuery) => {
@@ -62,7 +74,7 @@ export class CategoriesService {
         return `This action returns a #${id} category`;
     }
 
-    async update(id: number, categoryName: string) {
+    async update(id: number, categoryName: string, isPublic: boolean) {
         const category = await this.categoryRepo.findOne({ where: { id } });
         if (!category) throw new NotFoundException(ERROR_MESSAGES.CATEGORY.NOT_FOUND);
 
@@ -72,7 +84,9 @@ export class CategoriesService {
             throw new BadRequestException(ERROR_MESSAGES.CATEGORY.EXISTED);
         }
 
+        console.log({ isPublic });
         category.name = categoryName;
+        category.is_public = isPublic;
         return await this.categoryRepo.save(category);
     }
 

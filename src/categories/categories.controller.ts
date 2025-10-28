@@ -21,15 +21,18 @@ export class CategoriesController {
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.CREATE, data);
     }
 
+    @UseGuards(OptionalAuthGuard)
     @Get()
-    async findAll() {
-        const data = await this.categoriesService.findAll();
+    async findAll(@User('role') role: Role) {
+        console.log({ role });
+        const data = await this.categoriesService.findAll(role);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.FIND_ALL, data);
     }
+
     @UseGuards(OptionalAuthGuard)
     @Get(':id/collection')
-    async findCollectionOfCategory(@Param('id') id: string, @User('id') userId: number) {
-        const data = await this.categoriesService.getCollectionOfCategory(+id, userId);
+    async findCollectionOfCategory(@Param('id') id: string, @User('id') userId: number, @User('role') role: Role) {
+        const data = await this.categoriesService.getCollectionOfCategory(+id, userId, role);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.FIND_COLLECTION_OF_CATEGORY, data);
     }
 
@@ -41,8 +44,9 @@ export class CategoriesController {
     @UseGuards(AuthGuard, RolesGuard)
     @Roles(Role.ADMIN)
     @Patch(':id')
-    async update(@Param('id') id: string, @Body('name') categoryName: string) {
-        const data = await this.categoriesService.update(+id, categoryName);
+    async update(@Param('id') id: string, @Body('name') categoryName: string, @Body('isPublic') isPublic: boolean) {
+        console.log({ isPublic, categoryName });
+        const data = await this.categoriesService.update(+id, categoryName, isPublic);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.UPDATE, data);
     }
 

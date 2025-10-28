@@ -17,6 +17,7 @@ import { Card } from 'src/cards/entities/card.entity';
 import dayjs from 'src/config/dayjs.config';
 import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
 import { Category } from 'src/categories/entities/category.entity';
+import { Role } from 'src/shared/enums';
 
 interface RawCollection {
     mastered_card_count: number;
@@ -58,11 +59,15 @@ export class CollectionsService {
         return newCol;
     }
 
-    async findAll(userId?: number) {
+    async findAll(userId?: number, role?: Role) {
         const qb = this.collectionRepo
             .createQueryBuilder('collection')
             .leftJoinAndSelect('collection.category', 'category')
             .loadRelationCountAndMap('collection.card_count', 'collection.cards');
+
+        if (role !== Role.ADMIN) {
+            qb.where('collection.is_public = true');
+        }
 
         if (userId) {
             qb.leftJoin('user_collection_progress', 'uc', 'uc.collection_id = collection.id AND uc.user_id = :userId', {
@@ -216,7 +221,7 @@ export class CollectionsService {
     }
 
     async update(id: number, updateCollectionDto: UpdateCollectionDto) {
-        const { name, categoryName, icon } = updateCollectionDto;
+        const { name, categoryName, icon, isPublic } = updateCollectionDto;
 
         const collection = await this.collectionRepo.findOne({ where: { id } });
         if (!collection) {
@@ -241,6 +246,8 @@ export class CollectionsService {
         }
 
         collection.icon = icon || null;
+        collection.is_public = isPublic || false;
+
         await this.collectionRepo.save(collection);
         return true;
     }
@@ -268,7 +275,7 @@ export class CollectionsService {
     }
 
     async registerCollection(id: number, taskNum: number, userId: number) {
-        const collection = await this.collectionRepo.findOne({ where: { id } });
+        const collection = await this.collectionRepo.findOne({ where: { id, is_public: true } });
         if (!collection) throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_FOUND);
 
         // check if registered
@@ -296,7 +303,7 @@ export class CollectionsService {
             .createQueryBuilder('progress')
             .leftJoinAndSelect('progress.collection', 'collection')
             .loadRelationCountAndMap('collection.card_count', 'collection.cards')
-            .select(['progress', 'collection.id', 'collection.name'])
+            .select(['progress', 'collection.id', 'collection.name', 'collection.icon'])
             .where('progress.id = :id', { id: newProgress.id })
             .getOne();
 
@@ -308,7 +315,7 @@ export class CollectionsService {
             .createQueryBuilder('progress')
             .leftJoinAndSelect('progress.collection', 'collection')
             .loadRelationCountAndMap('collection.card_count', 'collection.cards')
-            .select(['progress', 'collection.id', 'collection.name', 'collection.icon'])
+            .select(['progress', 'collection.id', 'collection.name', 'collection.icon', 'collection.is_public'])
             .addSelect(
                 (subQuery) =>
                     subQuery
@@ -331,6 +338,7 @@ export class CollectionsService {
             .where('progress.user_id = :userId', {
                 userId,
             })
+            .andWhere('collection.is_public = true')
             .getRawAndEntities<RawCollection>();
 
         const now = dayjs().tz(timeZone);

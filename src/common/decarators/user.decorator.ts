@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import type AuthenticatedRequest from 'src/shared/interfaces/auth-request';
 export const User = createParamDecorator(
-    (data: 'id' | 'deviceId' | 'email' | 'time_zone' | undefined, ctx: ExecutionContext) => {
+    (data: 'id' | 'deviceId' | 'email' | 'time_zone' | 'role' | undefined, ctx: ExecutionContext) => {
         const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
 
         const user = request.user;
@@ -16,6 +16,8 @@ export const User = createParamDecorator(
                 return user.deviceId;
             case 'time_zone':
                 return user.time_zone;
+            case 'role':
+                return user.role;
             default:
                 return user;
         }

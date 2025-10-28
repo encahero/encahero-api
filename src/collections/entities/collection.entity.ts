@@ -36,6 +36,9 @@ export class Collection {
     @Column({ default: 0 })
     register_count: number;
 
+    @Column({ default: false })
+    is_public: boolean;
+
     @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     created_at: Date;
 

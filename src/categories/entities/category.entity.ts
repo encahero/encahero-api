@@ -11,6 +11,9 @@ export class Category {
     @OneToMany(() => Collection, (collection) => collection.category)
     collections: Collection[];
 
+    @Column({ default: false })
+    is_public: boolean;
+
     @CreateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     created_at: Date;
 

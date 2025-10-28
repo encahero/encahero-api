@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateCollectionDto {
     @IsString()
@@ -10,4 +10,8 @@ export class CreateCollectionDto {
     @IsString()
     @IsOptional()
     icon?: string;
+
+    @IsBoolean()
+    @IsOptional()
+    isPublic?: boolean;
 }

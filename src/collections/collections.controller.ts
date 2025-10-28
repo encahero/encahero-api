@@ -43,8 +43,8 @@ export class CollectionsController {
 
     @UseGuards(OptionalAuthGuard)
     @Get()
-    async findAll(@User('id') userId: number) {
-        const data = await this.collectionsService.findAll(userId);
+    async findAll(@User('id') userId: number, @User('role') role: Role) {
+        const data = await this.collectionsService.findAll(userId, role);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.COLLECTION.FIND_ALL, data);
     }
 

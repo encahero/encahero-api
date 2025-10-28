@@ -26,6 +26,9 @@ export class CreateCardDto {
     @IsString()
     meaning: string;
 
+    @IsString()
+    phonetic: string;
+
     @IsArray()
     @Transform(({ value }: { value: string }) => {
         return JSON.parse(value) as string[];

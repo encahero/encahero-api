@@ -18,7 +18,6 @@ export class MailService {
     async sendLoginMagicLink(dto: MagicLinkAuthDto) {
         // generate token
         const { email } = dto;
-        console.log({ email });
 
         const user = await this.userService.findByEmail(email);
 

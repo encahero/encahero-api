@@ -84,7 +84,6 @@ export class CategoriesService {
             throw new BadRequestException(ERROR_MESSAGES.CATEGORY.EXISTED);
         }
 
-        console.log({ isPublic });
         category.name = categoryName;
         category.is_public = isPublic;
         return await this.categoryRepo.save(category);

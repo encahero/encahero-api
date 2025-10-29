@@ -47,12 +47,10 @@ export class QuizService {
             )
             .where('card.collection_id = :collectionId', { collectionId });
 
-        if (registered.status === CollectionStatus.COMPLETED) {
-            query.andWhere('card_progress.status = :mastered', { mastered: CardStatus.MASTERED });
-        } else if (newCardQuantity > 0) {
+        if (newCardQuantity > 0) {
             query.andWhere('card_progress.id IS NULL');
             isNewCardQuery = true;
-        } else if (isMixed) {
+        } else if (registered.status === CollectionStatus.COMPLETED || isMixed) {
             query.andWhere('card_progress.status IN (:...statuses)', {
                 statuses: [CardStatus.ACTIVE, CardStatus.MASTERED],
             });
@@ -114,8 +112,13 @@ export class QuizService {
         const last = registered.last_reviewed_at;
         if (!last || dayjs(last).tz(timeZone).format('YYYY-MM-DD') !== now.format('YYYY-MM-DD')) {
             // Sang ngày mới theo timezone user
+            console.log('different date');
             registered.today_learned_count = 0;
             registered.today_new_count = 0;
+        }
+
+        if (answer.isNew) {
+            registered.today_new_count++;
         }
 
         registered.today_learned_count++;

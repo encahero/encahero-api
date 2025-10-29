@@ -24,7 +24,6 @@ export class CategoriesController {
     @UseGuards(OptionalAuthGuard)
     @Get()
     async findAll(@User('role') role: Role) {
-        console.log({ role });
         const data = await this.categoriesService.findAll(role);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.FIND_ALL, data);
     }
@@ -45,7 +44,6 @@ export class CategoriesController {
     @Roles(Role.ADMIN)
     @Patch(':id')
     async update(@Param('id') id: string, @Body('name') categoryName: string, @Body('isPublic') isPublic: boolean) {
-        console.log({ isPublic, categoryName });
         const data = await this.categoriesService.update(+id, categoryName, isPublic);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.CATEGORY.UPDATE, data);
     }

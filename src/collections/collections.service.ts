@@ -245,7 +245,6 @@ export class CollectionsService {
             if (existing && existing.id !== id) {
                 throw new BadRequestException(ERROR_MESSAGES.COLLECTION.EXISTED);
             }
-            console.log('Updated name to:', name, icon);
             collection.name = name;
         }
 
@@ -500,7 +499,7 @@ export class CollectionsService {
 
             await this.userDailyProgressRepo.save(dailyProgress);
         } else if (status === CardStatus.ACTIVE) {
-            if (masteredCards === totalCards - 1) {
+            if (masteredCards <= totalCards - 1) {
                 if (collectionProgress) {
                     collectionProgress.status = CollectionStatus.IN_PROGRESS;
                     collectionProgress.completed_at = null;

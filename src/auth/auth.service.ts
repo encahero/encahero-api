@@ -317,8 +317,6 @@ export class AuthService {
         const deletedCount = await this.cacheService.revokeAllUserTokens(user.id.toString());
         console.log(`Revoked ${deletedCount} tokens for user ${user.id}`);
 
-        // remove token
-
         await this.cacheService.delRedis(`${email}:${RESET_TOKEN}`);
 
         return true;

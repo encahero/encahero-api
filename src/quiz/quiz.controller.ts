@@ -16,7 +16,6 @@ import { SUCCESS_MESSAGES } from 'src/constants';
 import { AuthGuard } from 'src/common/guard/auth.guard';
 import { User } from 'src/common/decarators/user.decorator';
 import { AnswerDto } from './dto/answer.dto';
-import type { RandomQuizMode } from 'src/shared/types';
 
 @Controller('quiz')
 export class QuizController {
@@ -28,9 +27,10 @@ export class QuizController {
         @Param('collectionId', ParseIntPipe) collectionId: number,
         @User('id', ParseIntPipe) userId: number,
         @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit = 5,
-        @Query('mode', new DefaultValuePipe('old')) mode: RandomQuizMode,
+        @Query('mixed', new DefaultValuePipe('false')) mixedStr: string,
     ) {
-        const data = await this.quizService.randomQuizFromCollection(collectionId, userId, mode, limit);
+        const isMixed = mixedStr === 'true';
+        const data = await this.quizService.randomQuizFromCollection(collectionId, userId, isMixed, limit);
         return successResponse(HttpStatus.OK, SUCCESS_MESSAGES.QUIZ.RAMDOM_FROM_COLLECTION, data);
     }
 

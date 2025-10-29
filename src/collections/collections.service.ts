@@ -52,7 +52,6 @@ export class CollectionsService {
             name,
             category,
             icon: icon || null,
-            register_count: 0, // mặc định 0
         });
 
         const newCol = await this.collectionRepo.save(collection);
@@ -63,7 +62,15 @@ export class CollectionsService {
         const qb = this.collectionRepo
             .createQueryBuilder('collection')
             .leftJoinAndSelect('collection.category', 'category')
-            .loadRelationCountAndMap('collection.card_count', 'collection.cards');
+            .loadRelationCountAndMap('collection.card_count', 'collection.cards')
+            .addSelect(
+                (subQuery) =>
+                    subQuery
+                        .select('COUNT(*)')
+                        .from(UserCollectionProgress, 'ucp')
+                        .where('ucp.collection_id = collection.id'),
+                'registered_count',
+            );
 
         if (role !== Role.ADMIN) {
             qb.where('collection.is_public = true');
@@ -83,6 +90,7 @@ export class CollectionsService {
             is_registered?: number;
             is_stopped?: boolean;
             is_completed?: boolean;
+            registered_count?: number;
         }>();
 
         // Nếu có userId → map thêm is_registered
@@ -92,10 +100,14 @@ export class CollectionsService {
                 is_registered: Number(collections.raw[index]['is_registered']) > 0,
                 is_stopped: Boolean(collections.raw[index]['is_stopped']),
                 is_completed: Boolean(collections.raw[index]['is_completed']),
+                registered_count: Number(collections.raw[index]['registered_count'] ?? 0),
             }));
         }
 
-        return collections.entities;
+        return collections.entities.map((collection, index) => ({
+            ...collection,
+            registered_count: Number(collections.raw[index]['registered_count'] ?? 0),
+        }));
     }
 
     async getStopCollection(userId: number) {
@@ -294,7 +306,6 @@ export class CollectionsService {
             status: CollectionStatus.IN_PROGRESS,
         });
 
-        collection.register_count += 1;
         await this.collectionRepo.save(collection);
 
         await this.userCollectionProgressRepo.save(newProgress);

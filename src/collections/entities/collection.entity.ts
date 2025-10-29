@@ -33,9 +33,6 @@ export class Collection {
     @OneToMany(() => UserCollectionProgress, (progress) => progress.collection)
     userProgress: UserCollectionProgress[];
 
-    @Column({ default: 0 })
-    register_count: number;
-
     @Column({ default: false })
     is_public: boolean;
 

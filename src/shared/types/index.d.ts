@@ -1,3 +1,3 @@
-type RandomQuizMode = 'old' | 'new' | 'mixed' | 'recap';
+type RandomQuizMode = 'mixed' | 'recap' | 'old';
 
 export { RandomQuizMode };

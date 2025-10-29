@@ -4,12 +4,11 @@ import { Card } from 'src/cards/entities/card.entity';
 import { ERROR_MESSAGES } from 'src/constants';
 import { CardStatus, UserCardProgress } from 'src/progress/entities/user-card-progress.entity';
 import { CollectionStatus, UserCollectionProgress } from 'src/progress/entities/user-collection-progress.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { AnswerDto, QuestionType } from './dto/answer.dto';
 import { UserDailyProgress } from 'src/progress/entities/user-daily-progress.entity';
 
 import dayjs from 'src/config/dayjs.config';
-import type { RandomQuizMode } from 'src/shared/types';
 
 @Injectable()
 export class QuizService {
@@ -25,17 +24,19 @@ export class QuizService {
     ) {}
     async randomQuiz() {}
 
-    async randomQuizFromCollection(collectionId: number, userId: number, mode: RandomQuizMode, limit: number) {
+    async randomQuizFromCollection(collectionId: number, userId: number, isMixed: boolean, limit: number) {
         const registered = await this.userCollectionProgressRepo.findOne({
             where: {
                 collection_id: collectionId,
                 user_id: userId,
-                status: mode === 'recap' ? CollectionStatus.COMPLETED : CollectionStatus.IN_PROGRESS,
+                status: Not(CollectionStatus.STOPPED),
             },
         });
 
         if (!registered) throw new ForbiddenException(ERROR_MESSAGES.COLLECTION.NOT_REGISTERED_OR_NOT_IN_PROGRESS);
 
+        const newCardQuantity = await this.canLearnNewCard(registered.collection_id, userId);
+        let isNewCardQuery = false;
         const query = this.cardRepo
             .createQueryBuilder('card')
             .leftJoin(
@@ -46,30 +47,27 @@ export class QuizService {
             )
             .where('card.collection_id = :collectionId', { collectionId });
 
-        switch (mode) {
-            case 'old':
-                query.andWhere('card_progress.status = :active', { active: CardStatus.ACTIVE });
-                break;
-            case 'new':
-                query.andWhere('card_progress.id IS NULL');
-                break;
-            case 'mixed':
-                query.andWhere('card_progress.status IN (:...statuses)', {
-                    statuses: [CardStatus.ACTIVE, CardStatus.MASTERED],
-                });
-                break;
-            case 'recap':
-                query.andWhere('card_progress.status = :mastered', { mastered: CardStatus.MASTERED });
-                break;
-            default:
-                throw new NotFoundException(ERROR_MESSAGES.QUIZ.MODE_NOT_FOUND);
+        if (registered.status === CollectionStatus.COMPLETED) {
+            query.andWhere('card_progress.status = :mastered', { mastered: CardStatus.MASTERED });
+        } else if (newCardQuantity > 0) {
+            query.andWhere('card_progress.id IS NULL');
+            isNewCardQuery = true;
+        } else if (isMixed) {
+            query.andWhere('card_progress.status IN (:...statuses)', {
+                statuses: [CardStatus.ACTIVE, CardStatus.MASTERED],
+            });
+        } else {
+            query.andWhere('card_progress.status = :active', { active: CardStatus.ACTIVE });
         }
 
-        query.orderBy('RANDOM()').limit(limit);
+        query.orderBy('RANDOM()').limit(newCardQuantity || limit);
 
         const cards = await query.getMany();
 
-        return cards;
+        return cards.map((card) => ({
+            ...card,
+            isNew: !!isNewCardQuery,
+        }));
     }
 
     async answerQuiz(collectionId: number, cardId: number, userId: number, timeZone: string, answer: AnswerDto) {
@@ -145,5 +143,42 @@ export class QuizService {
         return {
             collection: registered,
         };
+    }
+
+    private async canLearnNewCard(collectionId: number, userId: number) {
+        const progress = await this.userCollectionProgressRepo.findOne({
+            where: { collection_id: collectionId, user_id: userId },
+            relations: ['collection'],
+        });
+
+        if (!progress) {
+            throw new NotFoundException(ERROR_MESSAGES.COLLECTION.NOT_REGISTERED_OR_NOT_IN_PROGRESS);
+        }
+
+        const totalCards = await this.cardRepo.count({ where: { collection: { id: collectionId } } });
+        const learnedCards = await this.userCardProgressRepo.count({
+            where: { collection_id: collectionId, user_id: userId },
+        });
+        const masteredCards = await this.userCardProgressRepo.count({
+            where: { collection_id: collectionId, user_id: userId, status: CardStatus.MASTERED },
+        });
+
+        // Số lượng card mới tối đa theo daily limit
+        const remainingDailyNew = progress.daily_new_limit - progress.today_new_count;
+        // Số lượng card mới còn lại trong collection
+        const remainingCollectionNew = totalCards - learnedCards;
+
+        const canLearnNewToday =
+            progress.today_new_count < progress.daily_new_limit &&
+            totalCards > learnedCards &&
+            (progress.today_learned_count >= progress.task_count ||
+                (learnedCards === masteredCards && masteredCards < totalCards));
+
+        // Nếu không thỏa điều kiện, return 0
+        if (!canLearnNewToday && !(learnedCards === 0 || learnedCards < progress.daily_new_limit)) {
+            return 0;
+        }
+
+        return Math.min(remainingDailyNew, remainingCollectionNew);
     }
 }

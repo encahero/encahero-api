@@ -36,7 +36,9 @@ export class QuizService {
         if (!registered) throw new ForbiddenException(ERROR_MESSAGES.COLLECTION.NOT_REGISTERED_OR_NOT_IN_PROGRESS);
 
         const newCardQuantity = await this.canLearnNewCard(registered.collection_id, userId);
+        console.log(newCardQuantity);
         let isNewCardQuery = false;
+
         const query = this.cardRepo
             .createQueryBuilder('card')
             .leftJoin(
@@ -166,22 +168,33 @@ export class QuizService {
             where: { collection_id: collectionId, user_id: userId, status: CardStatus.MASTERED },
         });
 
+        if (totalCards <= learnedCards) return 0;
+
         // Số lượng card mới tối đa theo daily limit
         const remainingDailyNew = progress.daily_new_limit - progress.today_new_count;
         // Số lượng card mới còn lại trong collection
         const remainingCollectionNew = totalCards - learnedCards;
 
-        const canLearnNewToday =
-            progress.today_new_count < progress.daily_new_limit &&
-            totalCards > learnedCards &&
-            (progress.today_learned_count >= progress.task_count ||
-                (learnedCards === masteredCards && masteredCards < totalCards));
+        // case to learn new
+        // 1. start new collection
+        // 2. complete task count (20) && and remain new word to learn
+        // 3. mastered all learned word or leaning card < 5;
 
-        // Nếu không thỏa điều kiện, return 0
-        if (!canLearnNewToday && !(learnedCards === 0 || learnedCards < progress.daily_new_limit)) {
-            return 0;
+        const isStart = learnedCards === 0;
+        const isCompleteTask =
+            progress.today_new_count < progress.daily_new_limit && progress.today_learned_count >= progress.task_count;
+        const isAllMastered = learnedCards === masteredCards && masteredCards < totalCards;
+
+        // if too few learning word
+        if (isAllMastered || learnedCards - masteredCards < 5) {
+            return Math.min(remainingCollectionNew, 5);
         }
 
-        return Math.min(remainingDailyNew, remainingCollectionNew);
+        // Nếu không thỏa điều kiện, return 0
+        if (isStart || isCompleteTask || isAllMastered) {
+            return Math.min(remainingDailyNew, remainingCollectionNew);
+        }
+
+        return 0;
     }
 }

@@ -1,5 +1,5 @@
 import { Collection } from 'src/collections/entities/collection.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Check } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 
 export enum CollectionStatus {
     IN_PROGRESS = 'in_progress',
@@ -8,7 +8,6 @@ export enum CollectionStatus {
 }
 
 @Entity('user_collection_progress')
-@Check(`"today_new_count" <= "daily_new_limit"`)
 export class UserCollectionProgress {
     @PrimaryGeneratedColumn()
     id: number;
